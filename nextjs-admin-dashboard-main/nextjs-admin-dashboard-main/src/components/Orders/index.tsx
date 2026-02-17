@@ -1,0 +1,624 @@
+"use client";
+
+import React, { useState, useEffect } from "react";
+import {
+    Search,
+    Eye,
+    Package,
+    Calendar,
+    User,
+    MapPin,
+    CreditCard,
+    ChevronRight,
+    X,
+    AlertCircle,
+    CheckCircle2,
+    Clock,
+    Truck,
+    Ban,
+    Plus,
+    ShoppingCart,
+    Trash,
+    Edit as EditIcon
+} from "lucide-react";
+import { getOrders, updateOrderStatus, createOrder, updateOrder, deleteOrder } from "@/services/order.service";
+import { getProducts } from "@/services/product.service";
+import { getClients } from "@/services/user.service";
+import { Order, OrderStatus, OrderRequest } from "@/dtos/order.dto";
+import { Product } from "@/dtos/product.dto";
+import { UserResponse } from "@/dtos/user.dto";
+import { isAdmin, isWebmaster, isInfoline } from "@/services/auth.service";
+
+const Orders = () => {
+    const [orders, setOrders] = useState<Order[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+    const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [modalMode, setModalMode] = useState<"create" | "edit">("create");
+    const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+
+    // Data for creation/edit modal
+    const [products, setProducts] = useState<Product[]>([]);
+    const [clients, setClients] = useState<UserResponse[]>([]);
+    const [orderFormData, setOrderFormData] = useState<OrderRequest>({
+        items: [],
+        address: "",
+        postalCode: "",
+        username: ""
+    });
+
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+        fetchOrders();
+    }, []);
+
+    const fetchOrders = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const data = await getOrders();
+            setOrders(data);
+        } catch (err: any) {
+            console.error("Error fetching orders:", err);
+            setError(err.message || "Impossible de charger les commandes");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchModalData = async () => {
+        try {
+            const [p, c] = await Promise.all([getProducts(), getClients()]);
+            setProducts(p);
+            setClients(c);
+        } catch (error) {
+            console.error("Error fetching modal data:", error);
+        }
+    };
+
+    const handleOpenCreate = () => {
+        setModalMode("create");
+        setOrderFormData({ items: [], address: "", postalCode: "", username: "" });
+        fetchModalData();
+        setIsCreateModalOpen(true);
+    };
+
+    const handleOpenEdit = (order: Order) => {
+        setModalMode("edit");
+        setSelectedOrderId(order.id);
+        setOrderFormData({
+            items: order.items.map(item => ({
+                productId: item.productId,
+                quantity: item.quantity
+            })),
+            address: order.address,
+            postalCode: order.postalCode,
+            username: order.username
+        });
+        fetchModalData();
+        setIsCreateModalOpen(true);
+    };
+
+    const handleSubmitOrder = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (orderFormData.items.length === 0) {
+            alert("Veuillez ajouter au moins un produit.");
+            return;
+        }
+        try {
+            if (modalMode === "create") {
+                await createOrder(orderFormData);
+            } else {
+                if (selectedOrderId) {
+                    await updateOrder(selectedOrderId, orderFormData);
+                }
+            }
+            setIsCreateModalOpen(false);
+            fetchOrders();
+            setOrderFormData({ items: [], address: "", postalCode: "", username: "" });
+        } catch (error: any) {
+            alert(`Erreur: ${error.message}`);
+        }
+    };
+
+    const handleDeleteOrder = async (order: Order) => {
+        if (!confirm(`Voulez-vous vraiment supprimer la commande #${order.id} ?`)) return;
+        try {
+            await deleteOrder(order.id);
+            fetchOrders();
+        } catch (error: any) {
+            alert(`Erreur: ${error.message}`);
+        }
+    };
+
+    const handleStatusUpdate = async (id: number, status: OrderStatus) => {
+        try {
+            await updateOrderStatus(id, status);
+            fetchOrders();
+            if (selectedOrder?.id === id) {
+                setSelectedOrder(prev => prev ? { ...prev, status } : null);
+            }
+        } catch (error: any) {
+            alert(`Erreur: ${error.message}`);
+        }
+    };
+
+    const getStatusStyle = (status: OrderStatus) => {
+        switch (status) {
+            case "PENDING":
+                return { label: "En attente", icon: <Clock size={14} />, style: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300" };
+            case "SHIPPED":
+                return { label: "Expédiée", icon: <Truck size={14} />, style: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300" };
+            case "DELIVERED":
+                return { label: "Livrée", icon: <CheckCircle2 size={14} />, style: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300" };
+            case "CANCELLED":
+                return { label: "Annulée", icon: <Ban size={14} />, style: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300" };
+            default:
+                return { label: status, icon: null, style: "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300" };
+        }
+    };
+
+    const filteredOrders = orders.filter(o =>
+        o.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        o.id.toString().includes(searchTerm)
+    );
+
+    return (
+        <div className="mx-auto max-w-7xl p-4 sm:p-6">
+            <div className="mb-8 items-start justify-between flex flex-col sm:flex-row sm:items-center gap-4">
+                <div>
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Commandes Clients</h1>
+                    <p className="mt-1 text-gray-500 dark:text-gray-400">Suivi et gestion des ventes</p>
+                </div>
+                {isClient && isInfoline() && (
+                    <button
+                        onClick={handleOpenCreate}
+                        className="flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-indigo-700 active:scale-95"
+                    >
+                        <Plus size={18} />
+                        Nouvelle Commande
+                    </button>
+                )}
+            </div>
+
+            <div className="mb-6">
+                <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                    <input
+                        type="text"
+                        placeholder="Rechercher par client ou N° commande..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-10 pr-4 text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                    />
+                </div>
+            </div>
+
+            {error && (
+                <div className="mb-6 flex items-center gap-3 rounded-lg bg-red-50 p-4 text-red-700 border border-red-100 dark:bg-red-900/20 dark:text-red-400 dark:border-red-900/30">
+                    <AlertCircle size={20} />
+                    <p className="font-medium">{error}</p>
+                    <button onClick={fetchOrders} className="ml-auto text-sm underline hover:no-underline">Réessayer</button>
+                </div>
+            )}
+
+            <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                <table className="w-full text-left border-collapse">
+                    <thead>
+                        <tr className="border-b border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/50">
+                            <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">N° Commande</th>
+                            <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">Client</th>
+                            <th className="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">Date</th>
+                            <th className="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">Total (DT)</th>
+                            <th className="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">Statut</th>
+                            <th className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                        {loading ? (
+                            <tr>
+                                <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                                    <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent mb-2"></div>
+                                    <p>Chargement des commandes...</p>
+                                </td>
+                            </tr>
+                        ) : filteredOrders.length === 0 ? (
+                            <tr>
+                                <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                                    <Package className="mx-auto mb-3 text-gray-300" size={48} />
+                                    <p>Aucune commande trouvée</p>
+                                </td>
+                            </tr>
+                        ) : (
+                            filteredOrders.map((order) => {
+                                const status = getStatusStyle(order.status);
+                                return (
+                                    <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                                        <td className="px-6 py-4 font-mono text-sm font-semibold text-indigo-600">#{order.id}</td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-2">
+                                                <div className="h-8 w-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                                                    <User size={14} className="text-gray-400" />
+                                                </div>
+                                                <span className="font-medium text-gray-900 dark:text-white uppercase">{order.username}</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 text-center text-sm text-gray-600 dark:text-gray-300">
+                                            {new Date(order.orderDate).toLocaleDateString('fr-FR')}
+                                        </td>
+                                        <td className="px-6 py-4 text-center font-bold text-gray-900 dark:text-white">
+                                            {order.totalAmount.toLocaleString('fr-TN', { minimumFractionDigits: 3 })} DT
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${status.style}`}>
+                                                {status.icon}
+                                                {status.label}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            <div className="flex items-center justify-end gap-2">
+                                                <button
+                                                    onClick={() => { setSelectedOrder(order); setIsDetailModalOpen(true); }}
+                                                    className="p-2 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg"
+                                                    title="Voir détails"
+                                                >
+                                                    <Eye size={18} />
+                                                </button>
+                                                {isClient && isInfoline() && (
+                                                    <>
+                                                        <button
+                                                            onClick={() => handleOpenEdit(order)}
+                                                            className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg"
+                                                            title="Modifier"
+                                                        >
+                                                            <EditIcon size={18} />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDeleteOrder(order)}
+                                                            className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"
+                                                            title="Supprimer"
+                                                        >
+                                                            <Trash size={18} />
+                                                        </button>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })
+                        )}
+                    </tbody>
+                </table>
+            </div>
+
+            {/* Order Detail Modal */}
+            {isDetailModalOpen && selectedOrder && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                    <div className="w-full max-w-3xl rounded-xl bg-white p-6 shadow-2xl dark:bg-gray-800 max-h-[90vh] overflow-y-auto">
+                        <div className="mb-6 flex items-center justify-between border-b pb-4 dark:border-gray-700">
+                            <div>
+                                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Commande #{selectedOrder.id}</h2>
+                                <p className="text-sm text-gray-500">Passée le {new Date(selectedOrder.orderDate).toLocaleString('fr-FR')}</p>
+                            </div>
+                            <button onClick={() => setIsDetailModalOpen(false)} className="rounded-full p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                            <div className="space-y-4">
+                                <div className="flex items-start gap-3">
+                                    <div className="mt-1 p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg text-indigo-600"><User size={20} /></div>
+                                    <div>
+                                        <p className="text-xs font-semibold uppercase text-gray-400">Informations Client</p>
+                                        <p className="text-lg font-bold text-gray-900 dark:text-white uppercase">{selectedOrder.username}</p>
+                                        <p className="text-sm text-gray-500">ID Utilisateur: {selectedOrder.userId}</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-3">
+                                    <div className="mt-1 p-2 bg-green-50 dark:bg-green-900/20 rounded-lg text-green-600"><MapPin size={20} /></div>
+                                    <div>
+                                        <p className="text-xs font-semibold uppercase text-gray-400">Adresse de Livraison</p>
+                                        <p className="text-sm text-gray-700 dark:text-gray-300">{selectedOrder.address}</p>
+                                        <p className="text-sm text-gray-500">Code Postal: {selectedOrder.postalCode}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="bg-gray-50 dark:bg-gray-700/30 p-4 rounded-xl space-y-4">
+                                <div>
+                                    <p className="text-xs font-semibold uppercase text-gray-400 mb-2">Statut de la Commande</p>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {(["PENDING", "SHIPPED", "DELIVERED", "CANCELLED"] as OrderStatus[]).map(s => (
+                                            <button
+                                                key={s}
+                                                onClick={() => !isAdmin() && handleStatusUpdate(selectedOrder.id, s)}
+                                                disabled={isAdmin()}
+                                                className={`px-3 py-2 text-xs font-semibold rounded-lg border transition-all ${selectedOrder.status === s ? "bg-indigo-600 border-indigo-600 text-white" : "bg-white border-gray-200 text-gray-700 hover:border-indigo-600 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300"} ${isAdmin() ? "opacity-70 cursor-not-allowed" : ""}`}
+                                            >
+                                                {getStatusStyle(s).label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="mb-6">
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Articles Commandés</h3>
+                            <div className="rounded-xl border dark:border-gray-700 overflow-hidden">
+                                <table className="w-full text-left">
+                                    <thead className="bg-gray-50 dark:bg-gray-700/50">
+                                        <tr>
+                                            <th className="px-4 py-3 text-xs font-semibold uppercase text-gray-500">Produit</th>
+                                            <th className="px-4 py-3 text-center text-xs font-semibold uppercase text-gray-500">Prix</th>
+                                            <th className="px-4 py-3 text-center text-xs font-semibold uppercase text-gray-500">Qté</th>
+                                            <th className="px-4 py-3 text-right text-xs font-semibold uppercase text-gray-500">Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y dark:divide-gray-700">
+                                        {selectedOrder.items.map((item, idx) => (
+                                            <tr key={idx}>
+                                                <td className="px-4 py-3">
+                                                    <div className="flex items-center gap-2">
+                                                        {item.productImageUrl ? (
+                                                            <img src={item.productImageUrl} className="h-8 w-8 rounded object-cover" />
+                                                        ) : (
+                                                            <div className="h-8 w-8 rounded bg-gray-100 dark:bg-gray-700 flex items-center justify-center"><Package size={14} className="text-gray-400" /></div>
+                                                        )}
+                                                        <span className="text-sm font-medium dark:text-white">{item.productTitle}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-4 py-3 text-center text-sm">{item.price.toLocaleString('fr-TN')} DT</td>
+                                                <td className="px-4 py-3 text-center text-sm">x{item.quantity}</td>
+                                                <td className="px-4 py-3 text-right text-sm font-bold">{(item.price * item.quantity).toLocaleString('fr-TN', { minimumFractionDigits: 3 })} DT</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                    <tfoot className="bg-gray-50 dark:bg-gray-700/50 font-bold">
+                                        <tr>
+                                            <td colSpan={3} className="px-4 py-3 text-right text-gray-600 dark:text-gray-300">TOTAL</td>
+                                            <td className="px-4 py-3 text-right text-indigo-600 text-lg">{selectedOrder.totalAmount.toLocaleString('fr-TN', { minimumFractionDigits: 3 })} DT</td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Create/Edit Order Modal */}
+            {isCreateModalOpen && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                    <div className="w-full max-w-4xl rounded-3xl bg-white p-8 shadow-2xl dark:bg-gray-800 max-h-[95vh] overflow-y-auto border border-white/20">
+                        <div className="mb-8 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl text-indigo-600">
+                                    <ShoppingCart size={28} />
+                                </div>
+                                <div>
+                                    <h2 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tight">
+                                        {modalMode === "create" ? "Nouvelle Commande" : `Modifier Commande #${selectedOrderId}`}
+                                    </h2>
+                                    <p className="text-sm text-gray-500 font-medium">
+                                        {modalMode === "create" ? "Créez une vente pour un client existant ou nouveau" : "Mettre à jour les informations de la commande"}
+                                    </p>
+                                </div>
+                            </div>
+                            <button onClick={() => setIsCreateModalOpen(false)} className="rounded-full p-2 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                                <X size={24} />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleSubmitOrder} className="space-y-8">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                {/* Left Side: Client & Delivery Info */}
+                                <div className="space-y-6">
+                                    <div className="rounded-2xl border border-gray-100 bg-gray-50/50 p-6 dark:border-gray-700 dark:bg-gray-900/50">
+                                        <h3 className="mb-4 text-sm font-bold uppercase tracking-wider text-gray-400 flex items-center gap-2">
+                                            <User size={16} /> Informations Client
+                                        </h3>
+                                        <div className="space-y-4">
+                                            <div>
+                                                <label className="mb-1.5 block text-xs font-bold text-gray-500">Nom d'utilisateur / Client <span className="text-red-500">*</span></label>
+                                                <input
+                                                    type="text"
+                                                    list="clients-list"
+                                                    required
+                                                    value={orderFormData.username}
+                                                    onChange={(e) => setOrderFormData({ ...orderFormData, username: e.target.value })}
+                                                    className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 dark:border-gray-700 dark:bg-gray-800 dark:text-white outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all font-medium"
+                                                    placeholder="Chercher ou saisir un nouveau nom..."
+                                                />
+                                                <datalist id="clients-list">
+                                                    {clients.map(c => <option key={c.id} value={c.username}>{c.firstName} {c.lastName}</option>)}
+                                                </datalist>
+                                                <p className="mt-1.5 text-[10px] text-gray-400">Si le nom n'existe pas, un compte sera créé automatiquement.</p>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="col-span-2">
+                                                    <label className="mb-1.5 block text-xs font-bold text-gray-500">Adresse de Livraison <span className="text-red-500">*</span></label>
+                                                    <div className="relative">
+                                                        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                                                        <input
+                                                            type="text"
+                                                            required
+                                                            value={orderFormData.address}
+                                                            onChange={(e) => setOrderFormData({ ...orderFormData, address: e.target.value })}
+                                                            className="w-full rounded-xl border border-gray-200 bg-white pl-10 pr-4 py-3 dark:border-gray-700 dark:bg-gray-800 dark:text-white outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all font-medium"
+                                                            placeholder="Ex: Rue 123, Tunis"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="col-span-2">
+                                                    <label className="mb-1.5 block text-xs font-bold text-gray-500">Code Postal <span className="text-red-500">*</span></label>
+                                                    <input
+                                                        type="text"
+                                                        required
+                                                        value={orderFormData.postalCode}
+                                                        onChange={(e) => setOrderFormData({ ...orderFormData, postalCode: e.target.value })}
+                                                        className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 dark:border-gray-700 dark:bg-gray-800 dark:text-white outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all font-medium"
+                                                        placeholder="Ex: 1000"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Right Side: Cart Summary */}
+                                <div className="space-y-6">
+                                    <div className="rounded-2xl border border-indigo-100 bg-indigo-50/30 p-6 dark:border-indigo-900/20 dark:bg-indigo-900/10 flex flex-col h-full">
+                                        <h3 className="mb-4 text-sm font-bold uppercase tracking-wider text-indigo-600 flex items-center justify-between">
+                                            <span className="flex items-center gap-2"><ShoppingCart size={16} /> Panier</span>
+                                            <span className="text-xs lowercase font-medium">{orderFormData.items.length} article(s)</span>
+                                        </h3>
+
+                                        <div className="flex-1 overflow-y-auto max-h-[300px] mb-4 space-y-3 pr-2 custom-scrollbar">
+                                            {orderFormData.items.length === 0 ? (
+                                                <div className="flex flex-col items-center justify-center py-10 text-indigo-300">
+                                                    <ShoppingCart size={40} className="mb-2 opacity-50" />
+                                                    <p className="text-xs font-bold">Le panier est vide</p>
+                                                </div>
+                                            ) : (
+                                                orderFormData.items.map((item, idx) => {
+                                                    const product = products.find(p => p.id === item.productId);
+                                                    const price = product?.discountPrice && product.discountPrice > 0 ? product.discountPrice : product?.regularPrice || 0;
+                                                    return (
+                                                        <div key={idx} className="flex items-center justify-between bg-white dark:bg-gray-800 p-3 rounded-xl shadow-sm border border-indigo-100/50 dark:border-indigo-900/30">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="h-10 w-10 rounded-lg bg-gray-100 dark:bg-gray-700 overflow-hidden flex-shrink-0">
+                                                                    {product?.images?.[0]?.imageUrl ? (
+                                                                        <img src={product.images[0].imageUrl} className="h-full w-full object-cover" />
+                                                                    ) : (
+                                                                        <div className="h-full w-full flex items-center justify-center text-gray-400"><Package size={16} /></div>
+                                                                    )}
+                                                                </div>
+                                                                <div>
+                                                                    <p className="text-xs font-bold text-gray-900 dark:text-white line-clamp-1">{product?.title}</p>
+                                                                    <p className="text-[10px] text-gray-500 font-bold">{price.toLocaleString('fr-TN')} DT</p>
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg px-2 py-1">
+                                                                    <input
+                                                                        type="number"
+                                                                        min="1"
+                                                                        max={product?.quantity || 1}
+                                                                        value={item.quantity}
+                                                                        onChange={(e) => {
+                                                                            const newItems = [...orderFormData.items];
+                                                                            newItems[idx].quantity = parseInt(e.target.value);
+                                                                            setOrderFormData({ ...orderFormData, items: newItems });
+                                                                        }}
+                                                                        className="w-10 bg-transparent text-center text-xs font-black outline-none dark:text-white"
+                                                                    />
+                                                                </div>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        setOrderFormData({ ...orderFormData, items: orderFormData.items.filter((_, i) => i !== idx) });
+                                                                    }}
+                                                                    className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg"
+                                                                >
+                                                                    <Trash size={16} />
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    )
+                                                })
+                                            )}
+                                        </div>
+
+                                        <div className="border-t border-indigo-100 pt-4 dark:border-indigo-900/30 mt-auto">
+                                            <div className="flex justify-between items-center mb-4">
+                                                <span className="text-sm font-bold text-indigo-400">Total Commande</span>
+                                                <span className="text-xl font-black text-indigo-600 dark:text-indigo-400">
+                                                    {orderFormData.items.reduce((acc, item) => {
+                                                        const product = products.find(p => p.id === item.productId);
+                                                        const price = product?.discountPrice && product.discountPrice > 0 ? product.discountPrice : product?.regularPrice || 0;
+                                                        return acc + (price * item.quantity);
+                                                    }, 0).toLocaleString('fr-TN', { minimumFractionDigits: 3 })} <span className="text-xs font-bold">DT</span>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Center Section: Product Selection Selector */}
+                            <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                                <h3 className="mb-4 text-sm font-bold uppercase tracking-wider text-gray-400 flex items-center gap-2">
+                                    <Plus size={16} /> Sélection des Articles
+                                </h3>
+
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    <div className="md:col-span-2">
+                                        <label className="mb-1.5 block text-xs font-bold text-gray-500">Ajouter un produit</label>
+                                        <select
+                                            onChange={(e) => {
+                                                if (!e.target.value) return;
+                                                const pid = parseInt(e.target.value);
+                                                if (orderFormData.items.some(i => i.productId === pid)) {
+                                                    alert("Ce produit est déjà dans le panier.");
+                                                    return;
+                                                }
+                                                setOrderFormData({
+                                                    ...orderFormData,
+                                                    items: [...orderFormData.items, { productId: pid, quantity: 1 }]
+                                                });
+                                                e.target.value = "";
+                                            }}
+                                            className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-4 py-3 dark:border-gray-700 dark:bg-gray-900 dark:text-white outline-none focus:ring-4 focus:ring-indigo-500/10 font-bold transition-all appearance-none"
+                                        >
+                                            <option value="">-- Sélectionner un produit (vérification stock) --</option>
+                                            {products.map(p => {
+                                                const isOutOfStock = (p.quantity || 0) <= 0 || p.stockStatus === "HORS_STOCK";
+                                                return (
+                                                    <option key={p.id} value={p.id} disabled={isOutOfStock}>
+                                                        {p.title} {isOutOfStock ? "(HORS STOCK)" : `- Stock: ${p.quantity}`} ({(p.discountPrice || p.regularPrice)?.toLocaleString('fr-TN')} DT)
+                                                    </option>
+                                                );
+                                            })}
+                                        </select>
+                                    </div>
+                                    <div className="flex items-end">
+                                        <div className="flex h-[52px] w-full items-center justify-center rounded-xl bg-orange-50 text-orange-600 border border-orange-100 text-xs font-bold px-4 text-center">
+                                            Stock déduit automatiquement à la validation
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex justify-end gap-4 pt-4 border-t dark:border-gray-700">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsCreateModalOpen(false)}
+                                    className="rounded-xl px-8 py-3.5 text-sm font-bold text-gray-500 hover:bg-gray-100 transition-all"
+                                >
+                                    Annuler
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="rounded-xl bg-indigo-600 px-12 py-3.5 text-sm font-black text-white shadow-xl shadow-indigo-500/20 hover:bg-indigo-700 hover:-translate-y-0.5 transition-all active:scale-95 disabled:opacity-50"
+                                    disabled={orderFormData.items.length === 0}
+                                >
+                                    {modalMode === "create" ? "Valider la Commande" : "Enregistrer les modifications"}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+export default Orders;
