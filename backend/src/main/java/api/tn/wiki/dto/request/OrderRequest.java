@@ -8,7 +8,9 @@ public class OrderRequest {
     private OrderStatus status; // Optional for updates
     private String address;
     private String postalCode;
+    private String phone;
     private String username; // Optional: For Infoline to specify customer
+    private api.tn.wiki.entity.PaymentMethod paymentMethod;
 
     public OrderRequest() {}
 
@@ -51,12 +53,28 @@ public class OrderRequest {
         this.postalCode = postalCode;
     }
 
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
+
     public String getUsername() {
         return username;
     }
 
     public void setUsername(String username) {
         this.username = username;
+    }
+
+    public api.tn.wiki.entity.PaymentMethod getPaymentMethod() {
+        return paymentMethod;
+    }
+
+    public void setPaymentMethod(api.tn.wiki.entity.PaymentMethod paymentMethod) {
+        this.paymentMethod = paymentMethod;
     }
 
     public static class OrderItemRequest {

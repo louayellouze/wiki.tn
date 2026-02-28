@@ -35,13 +35,16 @@ public class User {
     @Column(name = "reset_password_token")
     private String resetPasswordToken;
 
+    @Column(name = "image_url", length = 1000000) // Support for base64
+    private String imageUrl;
+
     @Enumerated(EnumType.STRING)
     private Role role;
 
     public User() {
     }
 
-    public User(Integer id, String username, String password, String lastName, String firstName, String address, String phone, String email, String resetPasswordToken, Role role) {
+    public User(Integer id, String username, String password, String lastName, String firstName, String address, String phone, String email, String resetPasswordToken, String imageUrl, Role role) {
         this.id = id;
         this.username = username;
         this.password = password;
@@ -51,6 +54,7 @@ public class User {
         this.phone = phone;
         this.email = email;
         this.resetPasswordToken = resetPasswordToken;
+        this.imageUrl = imageUrl;
         this.role = role;
     }
 
@@ -132,5 +136,13 @@ public class User {
 
     public void setRole(Role role) {
         this.role = role;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 }

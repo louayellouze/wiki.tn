@@ -20,7 +20,7 @@ import {
     deleteProduct,
     uploadImage
 } from "@/services/product.service";
-import { getSpecKeys, createSpecKey } from "@/services/speckey.service";
+import { getSpecKeys, createSpecKey, getSpecKeyValues } from "@/services/speckey.service";
 import { getCategories } from "@/services/category.service";
 import { isAdmin, isWebmaster, isInfoline } from "@/services/auth.service";
 import {
@@ -42,6 +42,7 @@ const Products = () => {
     const [categories, setCategories] = useState<Category[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
+    const [selectedCategoryId, setSelectedCategoryId] = useState<number | "all">("all");
     const [categorySearchTerm, setCategorySearchTerm] = useState("");
     const [specKeys, setSpecKeys] = useState<SpecKey[]>([]);
 
@@ -232,7 +233,7 @@ const Products = () => {
             const keyName = prompt("Nom de la nouvelle clé (ex: Marque, Couleur):");
             if (!keyName) return;
             try {
-                const newKey = await createSpecKey(keyName);
+                const newKey = await createSpecKey({ name: keyName });
                 selectedKey = newKey;
                 await fetchSpecKeys();
             } catch (error: any) {
@@ -272,25 +273,41 @@ const Products = () => {
     };
 
     const getStockStatusBadge = (status: StockStatus, quantity: number) => {
-        if (quantity <= 0) {
+        // If it's explicitly set to En Arrivage or En Commande, show that even if quantity is 0
+        if (status === "EN_ARRIVAGE") {
+            return { label: "En Arrivage", style: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300" };
+        }
+        if (status === "EN_COMMANDE") {
+            return { label: "En Commande", style: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300" };
+        }
+
+        if (quantity <= 0 || status === "HORS_STOCK") {
             return { label: "Hors Stock", style: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300" };
         }
-        switch (status) {
-            case "EN_STOCK":
-                return { label: "En Stock", style: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300" };
-            case "EN_COMMANDE":
-                return { label: "En Commande", style: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300" };
-            case "EN_ARRIVAGE":
-                return { label: "En Arrivage", style: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300" };
-            case "HORS_STOCK":
-                return { label: "Hors Stock", style: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300" };
-            default:
-                return { label: status, style: "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300" };
-        }
+
+        return { label: "En Stock", style: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300" };
     };
 
     // Inline Spec Form State (Temporary for adding)
     const [specForm, setSpecForm] = useState({ keyId: 0, value: "", isNew: false, newKeyName: "" });
+    const [availableValues, setAvailableValues] = useState<string[]>([]);
+
+    useEffect(() => {
+        if (specForm.keyId > 0) {
+            fetchSpecValues(specForm.keyId);
+        } else {
+            setAvailableValues([]);
+        }
+    }, [specForm.keyId]);
+
+    const fetchSpecValues = async (keyId: number) => {
+        try {
+            const values = await getSpecKeyValues(keyId);
+            setAvailableValues(values);
+        } catch (error) {
+            console.error("Error fetching spec values:", error);
+        }
+    };
 
     const handleAddSpecInline = (form: "create" | "edit") => {
         if (!specForm.value) return;
@@ -335,13 +352,19 @@ const Products = () => {
         return highlighted;
     };
 
-    const filteredProducts = products.filter(p =>
-        p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.categories?.some(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
+    const filteredProducts = products.filter(p => {
+        const matchesSearch = p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            p.categories?.some(c => c.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            p.reference?.toLowerCase().includes(searchTerm.toLowerCase());
+
+        const matchesCategory = selectedCategoryId === "all" ||
+            p.categories?.some(c => c.id === selectedCategoryId);
+
+        return matchesSearch && matchesCategory;
+    });
 
     return (
-        <div className="mx-auto max-w-7xl p-4 sm:p-6">
+        <div className="mx-auto max-w-full py-4 sm:py-6">
             <div className="mb-8 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
                 <div>
                     <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Gestion des Produits</h1>
@@ -363,11 +386,23 @@ const Products = () => {
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                     <input
                         type="text"
-                        placeholder="Rechercher par titre ou catégorie..."
+                        placeholder="Rechercher par titre, catégorie ou référence..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-10 pr-4 text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:focus:ring-indigo-500/20"
                     />
+                </div>
+                <div className="w-full sm:w-64">
+                    <select
+                        value={selectedCategoryId}
+                        onChange={(e) => setSelectedCategoryId(e.target.value === "all" ? "all" : parseInt(e.target.value))}
+                        className="w-full rounded-lg border border-gray-300 bg-white py-2.5 px-4 text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:focus:ring-indigo-500/20"
+                    >
+                        <option value="all">Toutes les catégories</option>
+                        {categories.map(cat => (
+                            <option key={cat.id} value={cat.id}>{cat.name}</option>
+                        ))}
+                    </select>
                 </div>
             </div>
 
@@ -450,7 +485,7 @@ const Products = () => {
                                             >
                                                 <Eye size={18} />
                                             </button>
-                                            {!isInfoline() && (
+                                            {isClient && !isInfoline() && (
                                                 <button
                                                     onClick={() => {
                                                         setEditForm({
@@ -473,7 +508,7 @@ const Products = () => {
                                                     <Edit size={18} />
                                                 </button>
                                             )}
-                                            {isAdmin() && (
+                                            {isClient && isAdmin() && (
                                                 <button
                                                     onClick={() => {
                                                         setProductToDelete(product);
@@ -578,8 +613,9 @@ const Products = () => {
                                                 type="number"
                                                 step="0.001"
                                                 required
-                                                value={newProduct.regularPrice}
-                                                onChange={(e) => setNewProduct({ ...newProduct, regularPrice: parseFloat(e.target.value) })}
+                                                placeholder="Ex: 1299.000"
+                                                value={newProduct.regularPrice === 0 ? '' : newProduct.regularPrice}
+                                                onChange={(e) => setNewProduct({ ...newProduct, regularPrice: parseFloat(e.target.value) || 0 })}
                                                 className="w-full rounded-lg border border-gray-300 px-4 py-2.5 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                                             />
                                         </div>
@@ -588,8 +624,9 @@ const Products = () => {
                                             <input
                                                 type="number"
                                                 step="0.001"
-                                                value={newProduct.discountPrice || 0}
-                                                onChange={(e) => setNewProduct({ ...newProduct, discountPrice: parseFloat(e.target.value) })}
+                                                placeholder="Ex: 999.000"
+                                                value={newProduct.discountPrice === 0 ? '' : newProduct.discountPrice}
+                                                onChange={(e) => setNewProduct({ ...newProduct, discountPrice: parseFloat(e.target.value) || 0 })}
                                                 className="w-full rounded-lg border-2 border-red-200 px-4 py-2.5 dark:border-red-900/30 dark:bg-gray-700 dark:text-white"
                                             />
                                         </div>
@@ -600,8 +637,9 @@ const Products = () => {
                                             <input
                                                 type="number"
                                                 required
-                                                value={newProduct.quantity}
-                                                onChange={(e) => setNewProduct({ ...newProduct, quantity: parseInt(e.target.value) })}
+                                                placeholder="Ex: 10"
+                                                value={newProduct.quantity === 0 ? '' : newProduct.quantity}
+                                                onChange={(e) => setNewProduct({ ...newProduct, quantity: parseInt(e.target.value) || 0 })}
                                                 className="w-full rounded-lg border border-gray-300 px-4 py-2.5 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                                             />
                                         </div>
@@ -659,30 +697,42 @@ const Products = () => {
 
                                         {/* Inline Add Spec */}
                                         <div className="mb-4 flex gap-2">
-                                            <select
-                                                value={specForm.keyId}
-                                                onChange={(e) => setSpecForm({ ...specForm, keyId: parseInt(e.target.value) })}
-                                                className="flex-1 rounded-lg border border-gray-300 py-1.5 px-3 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                                            >
-                                                <option value="0">Sélectionner Clé...</option>
-                                                {specKeys.map(k => (
-                                                    <option key={k.id} value={k.id}>{k.name}</option>
-                                                ))}
-                                            </select>
-                                            <input
-                                                type="text"
-                                                placeholder="Valeur (ex: 16GB)"
-                                                value={specForm.value}
-                                                onChange={(e) => setSpecForm({ ...specForm, value: e.target.value })}
-                                                className="flex-1 rounded-lg border border-gray-300 py-1.5 px-3 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={() => handleAddSpecInline("create")}
-                                                className="rounded-lg bg-gray-100 px-3 py-1.5 text-sm font-bold text-indigo-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-indigo-400"
-                                            >
-                                                OK
-                                            </button>
+                                            <div className="mb-4 flex flex-col gap-2">
+                                                <div className="flex gap-2">
+                                                    <select
+                                                        value={specForm.keyId}
+                                                        onChange={(e) => setSpecForm({ ...specForm, keyId: parseInt(e.target.value), value: "" })}
+                                                        className="flex-1 rounded-lg border border-gray-300 py-1.5 px-3 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                                                    >
+                                                        <option value="0">Sélectionner Clé...</option>
+                                                        {specKeys.map(k => (
+                                                            <option key={k.id} value={k.id}>{k.name}</option>
+                                                        ))}
+                                                    </select>
+                                                    <div className="flex-1 relative">
+                                                        <input
+                                                            type="text"
+                                                            placeholder="Valeur (ex: 16GB)"
+                                                            list="available-values-create"
+                                                            value={specForm.value}
+                                                            onChange={(e) => setSpecForm({ ...specForm, value: e.target.value })}
+                                                            className="w-full rounded-lg border border-gray-300 py-1.5 px-3 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                                                        />
+                                                        <datalist id="available-values-create">
+                                                            {availableValues.map((v, i) => (
+                                                                <option key={i} value={v} />
+                                                            ))}
+                                                        </datalist>
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleAddSpecInline("create")}
+                                                        className="rounded-lg bg-gray-100 px-3 py-1.5 text-sm font-bold text-indigo-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-indigo-400"
+                                                    >
+                                                        OK
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </div>
 
                                         <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2">
@@ -703,7 +753,7 @@ const Products = () => {
                                             onClick={async () => {
                                                 const name = prompt("Nom de la nouvelle clé (ex: Résolution) :");
                                                 if (name) {
-                                                    await createSpecKey(name);
+                                                    await createSpecKey({ name: name });
                                                     fetchSpecKeys();
                                                 }
                                             }}
@@ -890,31 +940,41 @@ const Products = () => {
                                     <div>
                                         <label className="mb-3 block text-sm font-semibold text-gray-700 dark:text-gray-300">Spécifications Techniques</label>
 
-                                        <div className="mb-4 flex gap-2">
-                                            <select
-                                                value={specForm.keyId}
-                                                onChange={(e) => setSpecForm({ ...specForm, keyId: parseInt(e.target.value) })}
-                                                className="flex-1 rounded-lg border border-gray-300 py-1.5 px-3 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                                            >
-                                                <option value="0">Sélectionner Clé...</option>
-                                                {specKeys.map(k => (
-                                                    <option key={k.id} value={k.id}>{k.name}</option>
-                                                ))}
-                                            </select>
-                                            <input
-                                                type="text"
-                                                placeholder="Valeur"
-                                                value={specForm.value}
-                                                onChange={(e) => setSpecForm({ ...specForm, value: e.target.value })}
-                                                className="flex-1 rounded-lg border border-gray-300 py-1.5 px-3 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={() => handleAddSpecInline("edit")}
-                                                className="rounded-lg bg-gray-100 px-3 py-1.5 text-sm font-bold text-indigo-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-indigo-400"
-                                            >
-                                                OK
-                                            </button>
+                                        <div className="mb-4 flex flex-col gap-2">
+                                            <div className="flex gap-2">
+                                                <select
+                                                    value={specForm.keyId}
+                                                    onChange={(e) => setSpecForm({ ...specForm, keyId: parseInt(e.target.value), value: "" })}
+                                                    className="flex-1 rounded-lg border border-gray-300 py-1.5 px-3 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                                                >
+                                                    <option value="0">Sélectionner Clé...</option>
+                                                    {specKeys.map(k => (
+                                                        <option key={k.id} value={k.id}>{k.name}</option>
+                                                    ))}
+                                                </select>
+                                                <div className="flex-1 relative">
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Valeur"
+                                                        list="available-values-edit"
+                                                        value={specForm.value}
+                                                        onChange={(e) => setSpecForm({ ...specForm, value: e.target.value })}
+                                                        className="w-full rounded-lg border border-gray-300 py-1.5 px-3 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                                                    />
+                                                    <datalist id="available-values-edit">
+                                                        {availableValues.map((v, i) => (
+                                                            <option key={i} value={v} />
+                                                        ))}
+                                                    </datalist>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleAddSpecInline("edit")}
+                                                    className="rounded-lg bg-gray-100 px-3 py-1.5 text-sm font-bold text-indigo-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-indigo-400"
+                                                >
+                                                    OK
+                                                </button>
+                                            </div>
                                         </div>
 
                                         <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2">

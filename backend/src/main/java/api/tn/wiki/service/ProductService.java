@@ -4,17 +4,23 @@ import api.tn.wiki.dto.ImageDto;
 import api.tn.wiki.dto.SpecificationDto;
 import api.tn.wiki.dto.request.ProductRequest;
 import api.tn.wiki.dto.response.ProductResponse;
+import api.tn.wiki.dto.response.ReviewResponse;
 import api.tn.wiki.entity.*;
 import api.tn.wiki.repository.*;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.util.StopWatch;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
 public class ProductService {
+
+    private static final Logger logger = LoggerFactory.getLogger(ProductService.class);
 
     private final ProductRepository productRepository;
     private final ImageRepository imageRepository;
@@ -60,6 +66,41 @@ public class ProductService {
         return convertToResponse(product);
     }
 
+    @Transactional(readOnly = true)
+    public List<ProductResponse> getProductsByCategory(Long categoryId) {
+        java.util.List<Long> categoryIds = new java.util.ArrayList<>();
+        collectCategoryIdsRecursive(categoryId, categoryIds);
+        
+        return productRepository.findByCategories_IdIn(categoryIds).stream()
+                .map(this::convertToResponse)
+                .collect(Collectors.toList());
+    }
+
+    private void collectCategoryIdsRecursive(Long categoryId, java.util.List<Long> allIds) {
+        allIds.add(categoryId);
+        categoryRepository.findById(categoryId).ifPresent(category -> {
+            for (Category sub : category.getSubCategories()) {
+                collectCategoryIdsRecursive(sub.getId(), allIds);
+            }
+        });
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProductResponse> searchProducts(String query) {
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
+        
+        List<ProductResponse> results = productRepository.searchProducts(query).stream()
+                .map(this::convertToResponse)
+                .collect(Collectors.toList());
+        
+        stopWatch.stop();
+        logger.info("Recherche pour '{}' exécutée en {} ms ({} résultats)", 
+                query, stopWatch.getTotalTimeMillis(), results.size());
+        
+        return results;
+    }
+
     @Transactional
     public ProductResponse createProduct(ProductRequest request) {
         Product product = new Product();
@@ -78,12 +119,27 @@ public class ProductService {
                 product.setStockStatus(StockStatus.EN_STOCK);
             }
         } else {
-            product.setStockStatus(StockStatus.EN_STOCK);
+            // Default based on quantity rule (> 1 to be in stock)
+            if (product.getQuantity() != null && product.getQuantity() <= 1) {
+                product.setStockStatus(StockStatus.HORS_STOCK);
+            } else {
+                product.setStockStatus(StockStatus.EN_STOCK);
+            }
         }
         
-        // AUTO-STATUS: If quantity is 0, override to HORS_STOCK
-        if (product.getQuantity() != null && product.getQuantity() == 0) {
-            product.setStockStatus(StockStatus.HORS_STOCK);
+        // AUTO-STATUS Logic (Refinement)
+        if (product.getQuantity() != null) {
+            if (product.getQuantity() == 0) {
+                // If quantity is 0, must be HORS_STOCK unless it's En Arrivage or En Commande
+                if (product.getStockStatus() != StockStatus.EN_ARRIVAGE && product.getStockStatus() != StockStatus.EN_COMMANDE) {
+                    product.setStockStatus(StockStatus.HORS_STOCK);
+                }
+            } else if (product.getQuantity() > 1) {
+                // If quantity is > 1 and it wasn't explicitly set to something else in request, or if it was HORS_STOCK
+                if (request.getStockStatus() == null || product.getStockStatus() == StockStatus.HORS_STOCK) {
+                     product.setStockStatus(StockStatus.EN_STOCK);
+                }
+            }
         }
 
         // Set categories
@@ -166,13 +222,15 @@ public class ProductService {
         // AUTO-STATUS Logic
         if (product.getQuantity() != null) {
             if (product.getQuantity() == 0) {
-                // If quantity is 0, must be HORS_STOCK
-                product.setStockStatus(StockStatus.HORS_STOCK);
-            } else if (product.getQuantity() > 0 && product.getStockStatus() == StockStatus.HORS_STOCK) {
-                // If quantity becomes > 0 and it was HORS_STOCK, switch to EN_STOCK 
-                // unless the user specifically requested another status (like EN_ARRIVAGE) 
-                // in this same update request.
-                if (request.getStockStatus() == null || request.getStockStatus().equalsIgnoreCase("HORS_STOCK")) {
+                // If quantity is 0, must be HORS_STOCK unless it's En Arrivage or En Commande
+                if (product.getStockStatus() != StockStatus.EN_ARRIVAGE && product.getStockStatus() != StockStatus.EN_COMMANDE) {
+                    product.setStockStatus(StockStatus.HORS_STOCK);
+                }
+            } else if (product.getQuantity() > 1) {
+                // If quantity becomes > 1 and it was HORS_STOCK/EN_ARRIVAGE/EN_COMMANDE, switch to EN_STOCK
+                // but only if the user didn't explicitly select another status in this request
+                if (request.getStockStatus() == null || request.getStockStatus().equalsIgnoreCase("HORS_STOCK") || 
+                    request.getStockStatus().equalsIgnoreCase("EN_ARRIVAGE") || request.getStockStatus().equalsIgnoreCase("EN_COMMANDE")) {
                     product.setStockStatus(StockStatus.EN_STOCK);
                 }
             }
@@ -278,6 +336,26 @@ public class ProductService {
 
         String firstImageUrl = !imageDtos.isEmpty() ? imageDtos.get(0).getImageUrl() : null;
 
+        List<ReviewResponse> reviewResponses = product.getReviews().stream()
+                .map(review -> {
+                    String fullName = review.getUser().getFirstName() + " " + review.getUser().getLastName();
+                    return new ReviewResponse(
+                            review.getId(),
+                            review.getRating(),
+                            review.getComment(),
+                            review.getCreatedAt(),
+                            review.getUser().getUsername(),
+                            fullName.trim()
+                    );
+                })
+                .collect(Collectors.toList());
+
+        Double averageRating = product.getReviews().isEmpty() ? 0.0 :
+                product.getReviews().stream()
+                        .mapToInt(Review::getRating)
+                        .average()
+                        .orElse(0.0);
+
         return new ProductResponse(
                 product.getId(),
                 product.getTitle(),
@@ -291,7 +369,9 @@ public class ProductService {
                 product.getStockStatus() != null ? product.getStockStatus().name() : null,
                 firstImageUrl,
                 imageDtos,
-                specDtos
+                specDtos,
+                averageRating,
+                reviewResponses
         );
     }
 }

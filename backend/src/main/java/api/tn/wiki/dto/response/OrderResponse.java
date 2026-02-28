@@ -13,12 +13,15 @@ public class OrderResponse {
     private Double totalAmount;
     private String address;
     private String postalCode;
+    private String phone;
+    private api.tn.wiki.entity.PaymentMethod paymentMethod;
     private List<OrderItemResponse> items;
 
     public OrderResponse() {}
 
     public OrderResponse(Long id, Integer userId, String username, LocalDateTime orderDate, 
-                         OrderStatus status, Double totalAmount, String address, String postalCode, List<OrderItemResponse> items) {
+                         OrderStatus status, Double totalAmount, String address, String postalCode, 
+                         String phone, api.tn.wiki.entity.PaymentMethod paymentMethod, List<OrderItemResponse> items) {
         this.id = id;
         this.userId = userId;
         this.username = username;
@@ -27,6 +30,8 @@ public class OrderResponse {
         this.totalAmount = totalAmount;
         this.address = address;
         this.postalCode = postalCode;
+        this.phone = phone;
+        this.paymentMethod = paymentMethod;
         this.items = items;
     }
 
@@ -55,8 +60,14 @@ public class OrderResponse {
     public String getPostalCode() { return postalCode; }
     public void setPostalCode(String postalCode) { this.postalCode = postalCode; }
 
+    public String getPhone() { return phone; }
+    public void setPhone(String phone) { this.phone = phone; }
+
     public List<OrderItemResponse> getItems() { return items; }
     public void setItems(List<OrderItemResponse> items) { this.items = items; }
+
+    public api.tn.wiki.entity.PaymentMethod getPaymentMethod() { return paymentMethod; }
+    public void setPaymentMethod(api.tn.wiki.entity.PaymentMethod paymentMethod) { this.paymentMethod = paymentMethod; }
 
     public static class OrderItemResponse {
         private Long id;

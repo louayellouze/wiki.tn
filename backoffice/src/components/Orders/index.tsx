@@ -47,7 +47,9 @@ const Orders = () => {
         items: [],
         address: "",
         postalCode: "",
-        username: ""
+        phone: "",
+        username: "",
+        paymentMethod: "CASH_ON_DELIVERY"
     });
 
     const [isClient, setIsClient] = useState(false);
@@ -83,7 +85,7 @@ const Orders = () => {
 
     const handleOpenCreate = () => {
         setModalMode("create");
-        setOrderFormData({ items: [], address: "", postalCode: "", username: "" });
+        setOrderFormData({ items: [], address: "", postalCode: "", phone: "", username: "", paymentMethod: "CASH_ON_DELIVERY" });
         fetchModalData();
         setIsCreateModalOpen(true);
     };
@@ -98,7 +100,9 @@ const Orders = () => {
             })),
             address: order.address,
             postalCode: order.postalCode,
-            username: order.username
+            phone: order.phone,
+            username: order.username,
+            paymentMethod: order.paymentMethod
         });
         fetchModalData();
         setIsCreateModalOpen(true);
@@ -120,7 +124,7 @@ const Orders = () => {
             }
             setIsCreateModalOpen(false);
             fetchOrders();
-            setOrderFormData({ items: [], address: "", postalCode: "", username: "" });
+            setOrderFormData({ items: [], address: "", postalCode: "", phone: "", username: "", paymentMethod: "CASH_ON_DELIVERY" });
         } catch (error: any) {
             alert(`Erreur: ${error.message}`);
         }
@@ -152,12 +156,44 @@ const Orders = () => {
         switch (status) {
             case "PENDING":
                 return { label: "En attente", icon: <Clock size={14} />, style: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300" };
+            case "CONFIRMED":
+                return { label: "Confirmée", icon: <CheckCircle2 size={14} />, style: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300" };
             case "SHIPPED":
                 return { label: "Expédiée", icon: <Truck size={14} />, style: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300" };
             case "DELIVERED":
                 return { label: "Livrée", icon: <CheckCircle2 size={14} />, style: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300" };
             case "CANCELLED":
                 return { label: "Annulée", icon: <Ban size={14} />, style: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300" };
+            case "DELIVERED_TO_STORE":
+                return { label: "Livré au magasin", icon: <Package size={14} />, style: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300" };
+            case "EXCHANGE":
+                return { label: "Echange", icon: <ShoppingCart size={14} />, style: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300" };
+            case "IN_DELIVERY_ARAMEX":
+                return { label: "Livraison Aramex", icon: <Truck size={14} />, style: "bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-300" };
+            case "SMT":
+                return { label: "SMT", icon: <Truck size={14} />, style: "bg-slate-100 text-slate-800 dark:bg-slate-900/30 dark:text-slate-300" };
+            case "ARTICLE_BEING_PURCHASED":
+                return { label: "Article en cours d'achat", icon: <ShoppingCart size={14} />, style: "bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-300" };
+            case "AWAITING_RESTOCK":
+                return { label: "Attente réappro", icon: <Clock size={14} />, style: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300" };
+            case "PC_BEING_ASSEMBLED":
+                return { label: "PC en montage", icon: <Package size={14} />, style: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300" };
+            case "ORDER_BEING_PICKED_UP":
+                return { label: "En ramassage", icon: <Package size={14} />, style: "bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-300" };
+            case "TRANSFERRED_TO_STORE_FACILITY_PAYMENT":
+                return { label: "Transf. Mag (Facilité)", icon: <CreditCard size={14} />, style: "bg-violet-100 text-violet-800 dark:bg-violet-900/30 dark:text-violet-300" };
+            case "TRANSFERRED_TO_STORE_CHECK_PAYMENT":
+                return { label: "Transf. Mag (Chèque)", icon: <CreditCard size={14} />, style: "bg-fuchsia-100 text-fuchsia-800 dark:bg-fuchsia-900/30 dark:text-fuchsia-300" };
+            case "UNREACHABLE_NUMBER":
+                return { label: "Numéro injoignable", icon: <AlertCircle size={14} />, style: "bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300" };
+            case "AWAITING_AVAILABILITY_CHECK":
+                return { label: "Vérif. disponibilité", icon: <Search size={14} />, style: "bg-sky-100 text-sky-800 dark:bg-sky-900/30 dark:text-sky-300" };
+            case "ORDER_ARRIVED_AT_STORE":
+                return { label: "Arrivée au magasin", icon: <Package size={14} />, style: "bg-lime-100 text-lime-800 dark:bg-lime-900/30 dark:text-lime-300" };
+            case "IN_DELIVERY_OWN_MEANS":
+                return { label: "Livraison interne", icon: <Truck size={14} />, style: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300" };
+            case "AWAITING_CLIENT_RESPONSE":
+                return { label: "Attente rép client", icon: <User size={14} />, style: "bg-zinc-100 text-zinc-800 dark:bg-zinc-900/30 dark:text-zinc-300" };
             default:
                 return { label: status, icon: null, style: "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300" };
         }
@@ -169,7 +205,7 @@ const Orders = () => {
     );
 
     return (
-        <div className="mx-auto max-w-7xl p-4 sm:p-6">
+        <div className="mx-auto max-w-full py-4 sm:py-6">
             <div className="mb-8 items-start justify-between flex flex-col sm:flex-row sm:items-center gap-4">
                 <div>
                     <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Commandes Clients</h1>
@@ -327,6 +363,22 @@ const Orders = () => {
                                         <p className="text-xs font-semibold uppercase text-gray-400">Adresse de Livraison</p>
                                         <p className="text-sm text-gray-700 dark:text-gray-300">{selectedOrder.address}</p>
                                         <p className="text-sm text-gray-500">Code Postal: {selectedOrder.postalCode}</p>
+                                        {selectedOrder.phone && (
+                                            <p className="text-sm font-bold text-indigo-600 mt-1 flex items-center gap-1">
+                                                <small className="text-gray-400 uppercase text-[10px]">Tél:</small> {selectedOrder.phone}
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-3">
+                                    <div className="mt-1 p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg text-purple-600"><CreditCard size={20} /></div>
+                                    <div>
+                                        <p className="text-xs font-semibold uppercase text-gray-400">Mode de Paiement</p>
+                                        <p className="text-sm font-bold text-gray-900 dark:text-white">
+                                            {selectedOrder.paymentMethod === 'CASH_ON_DELIVERY' ? 'Espèces à la livraison' :
+                                                selectedOrder.paymentMethod === 'CARD' ? 'Carte Bancaire' :
+                                                    selectedOrder.paymentMethod || 'Non spécifié'}
+                                        </p>
                                     </div>
                                 </div>
                             </div>
@@ -334,13 +386,22 @@ const Orders = () => {
                             <div className="bg-gray-50 dark:bg-gray-700/30 p-4 rounded-xl space-y-4">
                                 <div>
                                     <p className="text-xs font-semibold uppercase text-gray-400 mb-2">Statut de la Commande</p>
-                                    <div className="grid grid-cols-2 gap-2">
-                                        {(["PENDING", "SHIPPED", "DELIVERED", "CANCELLED"] as OrderStatus[]).map(s => (
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                                        {([
+                                            "PENDING", "CONFIRMED", "SHIPPED", "DELIVERED", "CANCELLED",
+                                            "DELIVERED_TO_STORE", "EXCHANGE", "IN_DELIVERY_ARAMEX",
+                                            "SMT", "ARTICLE_BEING_PURCHASED", "AWAITING_RESTOCK",
+                                            "PC_BEING_ASSEMBLED", "ORDER_BEING_PICKED_UP",
+                                            "TRANSFERRED_TO_STORE_FACILITY_PAYMENT", "TRANSFERRED_TO_STORE_CHECK_PAYMENT",
+                                            "UNREACHABLE_NUMBER", "AWAITING_AVAILABILITY_CHECK",
+                                            "ORDER_ARRIVED_AT_STORE", "IN_DELIVERY_OWN_MEANS",
+                                            "AWAITING_CLIENT_RESPONSE"
+                                        ] as OrderStatus[]).map(s => (
                                             <button
                                                 key={s}
                                                 onClick={() => !isAdmin() && handleStatusUpdate(selectedOrder.id, s)}
                                                 disabled={isAdmin()}
-                                                className={`px-3 py-2 text-xs font-semibold rounded-lg border transition-all ${selectedOrder.status === s ? "bg-indigo-600 border-indigo-600 text-white" : "bg-white border-gray-200 text-gray-700 hover:border-indigo-600 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300"} ${isAdmin() ? "opacity-70 cursor-not-allowed" : ""}`}
+                                                className={`px-3 py-2 text-[10px] font-bold rounded-lg border transition-all text-center leading-tight ${selectedOrder.status === s ? "bg-indigo-600 border-indigo-600 text-white shadow-md" : "bg-white border-gray-200 text-gray-700 hover:border-indigo-600 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300"} ${isAdmin() ? "opacity-70 cursor-not-allowed" : ""}`}
                                             >
                                                 {getStatusStyle(s).label}
                                             </button>
@@ -348,46 +409,46 @@ const Orders = () => {
                                     </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <div className="mb-6">
-                            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Articles Commandés</h3>
-                            <div className="rounded-xl border dark:border-gray-700 overflow-hidden">
-                                <table className="w-full text-left">
-                                    <thead className="bg-gray-50 dark:bg-gray-700/50">
-                                        <tr>
-                                            <th className="px-4 py-3 text-xs font-semibold uppercase text-gray-500">Produit</th>
-                                            <th className="px-4 py-3 text-center text-xs font-semibold uppercase text-gray-500">Prix</th>
-                                            <th className="px-4 py-3 text-center text-xs font-semibold uppercase text-gray-500">Qté</th>
-                                            <th className="px-4 py-3 text-right text-xs font-semibold uppercase text-gray-500">Total</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y dark:divide-gray-700">
-                                        {selectedOrder.items.map((item, idx) => (
-                                            <tr key={idx}>
-                                                <td className="px-4 py-3">
-                                                    <div className="flex items-center gap-2">
-                                                        {item.productImageUrl ? (
-                                                            <img src={item.productImageUrl} className="h-8 w-8 rounded object-cover" />
-                                                        ) : (
-                                                            <div className="h-8 w-8 rounded bg-gray-100 dark:bg-gray-700 flex items-center justify-center"><Package size={14} className="text-gray-400" /></div>
-                                                        )}
-                                                        <span className="text-sm font-medium dark:text-white">{item.productTitle}</span>
-                                                    </div>
-                                                </td>
-                                                <td className="px-4 py-3 text-center text-sm">{item.price.toLocaleString('fr-TN')} DT</td>
-                                                <td className="px-4 py-3 text-center text-sm">x{item.quantity}</td>
-                                                <td className="px-4 py-3 text-right text-sm font-bold">{(item.price * item.quantity).toLocaleString('fr-TN', { minimumFractionDigits: 3 })} DT</td>
+                            <div className="md:col-span-2">
+                                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Articles Commandés</h3>
+                                <div className="rounded-xl border dark:border-gray-700 overflow-hidden">
+                                    <table className="w-full text-left">
+                                        <thead className="bg-gray-50 dark:bg-gray-700/50">
+                                            <tr>
+                                                <th className="px-4 py-3 text-xs font-semibold uppercase text-gray-500">Produit</th>
+                                                <th className="px-4 py-3 text-center text-xs font-semibold uppercase text-gray-500">Prix</th>
+                                                <th className="px-4 py-3 text-center text-xs font-semibold uppercase text-gray-500">Qté</th>
+                                                <th className="px-4 py-3 text-right text-xs font-semibold uppercase text-gray-500">Total</th>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                    <tfoot className="bg-gray-50 dark:bg-gray-700/50 font-bold">
-                                        <tr>
-                                            <td colSpan={3} className="px-4 py-3 text-right text-gray-600 dark:text-gray-300">TOTAL</td>
-                                            <td className="px-4 py-3 text-right text-indigo-600 text-lg">{selectedOrder.totalAmount.toLocaleString('fr-TN', { minimumFractionDigits: 3 })} DT</td>
-                                        </tr>
-                                    </tfoot>
-                                </table>
+                                        </thead>
+                                        <tbody className="divide-y dark:divide-gray-700">
+                                            {selectedOrder.items.map((item, idx) => (
+                                                <tr key={idx}>
+                                                    <td className="px-4 py-3">
+                                                        <div className="flex items-center gap-2">
+                                                            {item.productImageUrl ? (
+                                                                <img src={item.productImageUrl} className="h-8 w-8 rounded object-cover" />
+                                                            ) : (
+                                                                <div className="h-8 w-8 rounded bg-gray-100 dark:bg-gray-700 flex items-center justify-center"><Package size={14} className="text-gray-400" /></div>
+                                                            )}
+                                                            <span className="text-sm font-medium dark:text-white">{item.productTitle}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-4 py-3 text-center text-sm">{item.price.toLocaleString('fr-TN')} DT</td>
+                                                    <td className="px-4 py-3 text-center text-sm">x{item.quantity}</td>
+                                                    <td className="px-4 py-3 text-right text-sm font-bold">{(item.price * item.quantity).toLocaleString('fr-TN', { minimumFractionDigits: 3 })} DT</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                        <tfoot className="bg-gray-50 dark:bg-gray-700/50 font-bold">
+                                            <tr>
+                                                <td colSpan={3} className="px-4 py-3 text-right text-gray-600 dark:text-gray-300">TOTAL</td>
+                                                <td className="px-4 py-3 text-right text-indigo-600 text-lg">{selectedOrder.totalAmount.toLocaleString('fr-TN', { minimumFractionDigits: 3 })} DT</td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -467,6 +528,36 @@ const Orders = () => {
                                                         className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 dark:border-gray-700 dark:bg-gray-800 dark:text-white outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all font-medium"
                                                         placeholder="Ex: 1000"
                                                     />
+                                                </div>
+                                                <div className="col-span-2">
+                                                    <label className="mb-1.5 block text-xs font-bold text-gray-500">Numéro de Téléphone <span className="text-red-500">*</span></label>
+                                                    <input
+                                                        type="tel"
+                                                        required
+                                                        value={orderFormData.phone}
+                                                        onChange={(e) => setOrderFormData({ ...orderFormData, phone: e.target.value })}
+                                                        className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 dark:border-gray-700 dark:bg-gray-800 dark:text-white outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all font-medium"
+                                                        placeholder="Ex: 22 333 444"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="mb-1.5 block text-xs font-bold text-gray-500">Mode de Paiement <span className="text-red-500">*</span></label>
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setOrderFormData({ ...orderFormData, paymentMethod: "CASH_ON_DELIVERY" })}
+                                                        className={`px-4 py-3 rounded-xl border text-xs font-bold transition-all ${orderFormData.paymentMethod === "CASH_ON_DELIVERY" ? "bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-500/20" : "bg-white border-gray-200 text-gray-600 hover:border-indigo-500"}`}
+                                                    >
+                                                        Espèces
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setOrderFormData({ ...orderFormData, paymentMethod: "CARD" })}
+                                                        className={`px-4 py-3 rounded-xl border text-xs font-bold transition-all ${orderFormData.paymentMethod === "CARD" ? "bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-500/20" : "bg-white border-gray-200 text-gray-600 hover:border-indigo-500"}`}
+                                                    >
+                                                        Carte
+                                                    </button>
                                                 </div>
                                             </div>
                                         </div>
@@ -616,8 +707,9 @@ const Orders = () => {
                         </form>
                     </div>
                 </div>
-            )}
-        </div>
+            )
+            }
+        </div >
     );
 };
 

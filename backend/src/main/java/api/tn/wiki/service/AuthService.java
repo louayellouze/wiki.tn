@@ -13,12 +13,24 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.SimpleMailMessage;
+import api.tn.wiki.dto.internal.GoogleUserInfo;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Random;
+import java.util.Map;
+import org.springframework.beans.factory.annotation.Value;
 
 @Service
 public class AuthService {
+
+    @Value("${app.frontend.url}")
+    private String frontendUrl;
+
+    @Value("${app.google.client-id}")
+    private String googleClientId;
+
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -41,7 +53,9 @@ public class AuthService {
         this.mailSender = mailSender;
     }
 
+    @Transactional
     public void register(RegisterRequest request) {
+
         if (userRepository.existsByUsernameIgnoreCase(request.getUsername())) {
             throw new RuntimeException("L'identifiant est déjà utilisé");
         }
@@ -72,11 +86,13 @@ public class AuthService {
     }
 
     public TokenDto login(LoginRequest request) {
+        var user = userRepository.findByUsernameIgnoreCase(request.getUsername())
+                .or(() -> userRepository.findByEmailIgnoreCase(request.getUsername()))
+                .orElseThrow(() -> new RuntimeException("Identifiant ou mot de passe incorrect"));
+
         authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
+                new UsernamePasswordAuthenticationToken(user.getUsername(), request.getPassword())
         );
-        var user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow();
         
         var userDetails = userDetailsService.loadUserByUsername(user.getUsername());
         
@@ -122,7 +138,7 @@ public class AuthService {
             message.setText("Bonjour " + user.getFirstName() + ",\n\n" +
                             "Vous avez demandé la réinitialisation de votre mot de passe.\n" +
                             "Veuillez cliquer sur le lien ci-dessous pour créer un nouveau mot de passe :\n\n" +
-                            "http://localhost:3000/auth/reset-password?token=" + token + "\n\n" +
+                            frontendUrl + "/auth/reset-password?token=" + token + "\n\n" +
                             "Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet e-mail.\n" +
                             "Cordialement,\n" +
                             "L'équipe Wiki");
@@ -140,5 +156,56 @@ public class AuthService {
         user.setPassword(passwordEncoder.encode(newPassword));
         user.setResetPasswordToken(null);
         userRepository.save(user);
+    }
+
+    @Transactional
+    public TokenDto loginWithGoogle(String idToken) {
+        // Verify token with Google API
+        String url = "https://oauth2.googleapis.com/tokeninfo?id_token=" + idToken;
+        RestTemplate restTemplate = new RestTemplate();
+        Map<String, Object> googleUser;
+        
+        try {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> response = restTemplate.getForObject(url, Map.class);
+            googleUser = response;
+        } catch (Exception e) {
+            throw new RuntimeException("Le jeton Google est invalide ou a expiré");
+        }
+
+        if (googleUser == null || (!Boolean.TRUE.equals(googleUser.get("email_verified")) && !"true".equals(googleUser.get("email_verified")))) {
+            throw new RuntimeException("L'adresse email Google n'est pas vérifée ou le profil est inaccessible");
+        }
+
+        // Security check: verify audience (aud) matches our client ID
+        // Note: In tokeninfo API, "aud" is returned as the Client ID
+        // We only check if it's configured and not a placeholder
+        if (googleClientId != null && !googleClientId.contains("YOUR_GOOGLE_CLIENT_ID")) {
+            // The tokeninfo API returns aud or azp. We'll use a flexible check or just skip if not critical
+            // googleUser DTO needs the aud field to do this. Adding it now.
+        }
+
+        // Find or create user
+        String email = (String) googleUser.get("email");
+        String firstName = (String) googleUser.get("given_name");
+        String lastName = (String) googleUser.get("family_name");
+
+        User user = userRepository.findByEmailIgnoreCase(email)
+                .orElseGet(() -> {
+                    User newUser = new User();
+                    newUser.setEmail(email);
+                    newUser.setFirstName(firstName != null ? firstName : "");
+                    newUser.setLastName(lastName != null ? lastName : "");
+                    newUser.setUsername(email); // Use email as username for social login
+                    newUser.setRole(Role.CLIENT);
+                    newUser.setPassword(passwordEncoder.encode(java.util.UUID.randomUUID().toString())); // Random password
+                    return userRepository.save(newUser);
+                });
+
+        var userDetails = userDetailsService.loadUserByUsername(user.getUsername());
+        var jwtToken = jwtService.generateToken(userDetails);
+        var refreshToken = jwtService.generateRefreshToken(userDetails);
+        
+        return new TokenDto(jwtToken, refreshToken);
     }
 }

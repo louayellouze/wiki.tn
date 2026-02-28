@@ -7,6 +7,7 @@ public class UserUpdateRequest {
     private String address;
     private String phone;
     private String role; // Optional, only for admins
+    private String imageUrl;
 
     public UserUpdateRequest() {}
 
@@ -22,4 +23,6 @@ public class UserUpdateRequest {
     public void setPhone(String phone) { this.phone = phone; }
     public String getRole() { return role; }
     public void setRole(String role) { this.role = role; }
+    public String getImageUrl() { return imageUrl; }
+    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
 }

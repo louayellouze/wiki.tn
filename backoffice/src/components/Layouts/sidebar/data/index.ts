@@ -53,6 +53,18 @@ export const NAV_DATA = [
         items: [],
       },
       {
+        title: "Spécifications",
+        url: "/specifications",
+        icon: Icons.FourCircle,
+        items: [],
+      },
+      {
+        title: "Bannières Hero",
+        url: "/hero-banners",
+        icon: Icons.Table,
+        items: [],
+      },
+      {
         title: "Commandes",
         url: "/orders",
         icon: Icons.PieChart,

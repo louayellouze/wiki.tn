@@ -31,6 +31,9 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
+    @org.springframework.beans.factory.annotation.Value("${app.cors.allowed-origins}")
+    private String allowedOrigins;
+
     public SecurityConfig(UserDetailsService userDetailsService, 
                           JwtAuthenticationFilter jwtAuthFilter, 
                           JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint) {
@@ -46,8 +49,9 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(jwtAuthenticationEntryPoint))
                 .authorizeHttpRequests(auth -> auth
-                        // Using explicit string matching suitable for MvcRequestMatcher default
-                        .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/products/**", "/api/v1/categories/**", "/api/v1/hero-banners/**", "/api/v1/spec-keys/**").permitAll()
+                        .requestMatchers("/api/v1/orders/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
@@ -59,13 +63,14 @@ public class SecurityConfig {
         return config.getAuthenticationManager();
     }
 
-    // Removed manual AuthenticationProvider bean to allow Spring Boot auto-configuration
-    // based on UserDetailsService and PasswordEncoder beans.
-
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:3000","http://192.168.83.1:3000"));
+        if (allowedOrigins != null && !allowedOrigins.isEmpty()) {
+            configuration.setAllowedOrigins(Arrays.asList(allowedOrigins.split(",")));
+        } else {
+            configuration.setAllowedOrigins(List.of("http://localhost:3000"));
+        }
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers"));
         configuration.setExposedHeaders(List.of("Authorization"));

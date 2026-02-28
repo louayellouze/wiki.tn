@@ -3,15 +3,13 @@ package api.tn.wiki.dto.response;
 public class SpecKeyResponse {
     private Integer id;
     private String name;
-    private String type;
 
     public SpecKeyResponse() {
     }
 
-    public SpecKeyResponse(Integer id, String name, String type) {
+    public SpecKeyResponse(Integer id, String name) {
         this.id = id;
         this.name = name;
-        this.type = type;
     }
 
     public Integer getId() {
@@ -28,13 +26,5 @@ public class SpecKeyResponse {
 
     public void setName(String name) {
         this.name = name;
-    }
-
-    public String getType() {
-        return type;
-    }
-
-    public void setType(String type) {
-        this.type = type;
     }
 }

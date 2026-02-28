@@ -39,6 +39,11 @@ const CategoryItem = ({
     isLast?: boolean;
 }) => {
     const [isExpanded, setIsExpanded] = useState(level < 1); // Expand first level by default
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
     const hasSubCategories = category.subCategories && category.subCategories.length > 0;
     const subCount = category.subCategories?.length || 0;
 
@@ -104,7 +109,7 @@ const CategoryItem = ({
                 </div>
 
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    {!isInfoline() && (
+                    {mounted && !isInfoline() && (
                         <button
                             onClick={() => onEdit(category)}
                             className="p-2 text-indigo-600 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 rounded-lg transition-colors"
@@ -113,7 +118,7 @@ const CategoryItem = ({
                             <Edit size={16} />
                         </button>
                     )}
-                    {isAdmin() && (
+                    {mounted && isAdmin() && (
                         <button
                             onClick={() => onDelete(category)}
                             className="p-2 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/40 rounded-lg transition-colors"
@@ -263,7 +268,7 @@ const Categories = () => {
     const filteredCategories = filterTree(categories);
 
     return (
-        <div className="mx-auto max-w-7xl p-4 sm:p-6">
+        <div className="mx-auto max-w-full py-4 sm:py-6">
             <div className="mb-8 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
                 <div>
                     <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Hiérarchie des Catégories</h1>

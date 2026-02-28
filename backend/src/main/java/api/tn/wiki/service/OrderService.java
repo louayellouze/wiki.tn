@@ -3,6 +3,7 @@ package api.tn.wiki.service;
 import api.tn.wiki.dto.request.OrderRequest;
 import api.tn.wiki.dto.response.OrderResponse;
 import api.tn.wiki.entity.*;
+import api.tn.wiki.entity.PaymentMethod;
 import api.tn.wiki.repository.OrderRepository;
 import api.tn.wiki.repository.ProductRepository;
 import api.tn.wiki.repository.UserRepository;
@@ -58,7 +59,10 @@ public class OrderService {
     public OrderResponse createOrder(OrderRequest request) {
         User currentUser = getCurrentUser();
         Order order = new Order();
+        order.setAddress(request.getAddress());
         order.setPostalCode(request.getPostalCode());
+        order.setPhone(request.getPhone());
+        order.setPaymentMethod(request.getPaymentMethod() != null ? request.getPaymentMethod() : PaymentMethod.CASH_ON_DELIVERY);
 
         // Handle User Assignment (for Infoline/Admin)
         if (request.getUsername() != null && !request.getUsername().isEmpty()) {
@@ -102,9 +106,10 @@ public class OrderService {
                 Integer currentStock = product.getQuantity() != null ? product.getQuantity() : 0;
                 System.out.println("Processing Product ID: " + product.getId() + ", Current Stock: " + currentStock + ", Requested: " + itemRequest.getQuantity());
 
-                // BLOCK: If status is HORS_STOCK, prevent order even if quantity might be positive (e.g. manual status set)
-                if (product.getStockStatus() == StockStatus.HORS_STOCK) {
-                    throw new RuntimeException("Le produit '" + product.getTitle() + "' est actuellement hors stock et ne peut pas être commandé.");
+                // BLOCK: Only allow EN_STOCK and EN_COMMANDE
+                if (product.getStockStatus() != StockStatus.EN_STOCK && product.getStockStatus() != StockStatus.EN_COMMANDE) {
+                    String statusLabel = product.getStockStatus() == StockStatus.EN_ARRIVAGE ? "en arrivage" : "hors stock";
+                    throw new RuntimeException("Le produit '" + product.getTitle() + "' est actuellement " + statusLabel + " et ne peut pas être commandé.");
                 }
 
                 if (currentStock < itemRequest.getQuantity()) {
@@ -229,6 +234,8 @@ public class OrderService {
                 order.getTotalAmount(),
                 order.getAddress(),
                 order.getPostalCode(),
+                order.getPhone(),
+                order.getPaymentMethod(),
                 itemResponses
         );
     }

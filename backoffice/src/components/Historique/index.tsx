@@ -72,7 +72,7 @@ const HistoriqueComponent = () => {
     );
 
     return (
-        <div className="mx-auto max-w-7xl p-4 sm:p-6">
+        <div className="mx-auto max-w-full py-4 sm:py-6">
             <div className="mb-8 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
                 <div>
                     <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Historique d'Audit</h1>

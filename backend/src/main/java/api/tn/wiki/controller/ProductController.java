@@ -30,6 +30,28 @@ public class ProductController {
         }
     }
 
+    @GetMapping("/search")
+    public ResponseEntity<List<ProductResponse>> searchProducts(@RequestParam String q) {
+        try {
+            List<ProductResponse> products = productService.searchProducts(q);
+            return ResponseEntity.ok(products);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).build();
+        }
+    }
+
+    @GetMapping("/category/{categoryId}")
+    public ResponseEntity<List<ProductResponse>> getProductsByCategory(@PathVariable Long categoryId) {
+        try {
+            List<ProductResponse> products = productService.getProductsByCategory(categoryId);
+            return ResponseEntity.ok(products);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).build();
+        }
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<?> getProductById(@PathVariable Integer id) {
         try {

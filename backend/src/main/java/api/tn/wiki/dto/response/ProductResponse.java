@@ -20,6 +20,8 @@ public class ProductResponse {
     private String imageUrl; // First image URL for quick display
     private List<ImageDto> images = new ArrayList<>();
     private List<SpecificationDto> specifications = new ArrayList<>();
+    private Double averageRating;
+    private List<ReviewResponse> reviews = new ArrayList<>();
 
     public ProductResponse() {
     }
@@ -27,7 +29,8 @@ public class ProductResponse {
     public ProductResponse(Integer id, String title, String description, Double regularPrice,
                            Integer quantity, List<CategoryResponse> categories, String codeSage, String reference, 
                            Double discountPrice, String stockStatus, String imageUrl,
-                           List<ImageDto> images, List<SpecificationDto> specifications) {
+                           List<ImageDto> images, List<SpecificationDto> specifications,
+                           Double averageRating, List<ReviewResponse> reviews) {
         this.id = id;
         this.title = title;
         this.description = description;
@@ -41,6 +44,8 @@ public class ProductResponse {
         this.imageUrl = imageUrl;
         this.images = images;
         this.specifications = specifications;
+        this.averageRating = averageRating;
+        this.reviews = reviews;
     }
 
     public Integer getId() {
@@ -145,5 +150,21 @@ public class ProductResponse {
 
     public void setImageUrl(String imageUrl) {
         this.imageUrl = imageUrl;
+    }
+
+    public Double getAverageRating() {
+        return averageRating;
+    }
+
+    public void setAverageRating(Double averageRating) {
+        this.averageRating = averageRating;
+    }
+
+    public List<ReviewResponse> getReviews() {
+        return reviews;
+    }
+
+    public void setReviews(List<ReviewResponse> reviews) {
+        this.reviews = reviews;
     }
 }

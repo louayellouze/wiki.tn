@@ -52,6 +52,12 @@ public class Product {
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<SpecValue> specifications = new ArrayList<>();
 
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Review> reviews = new ArrayList<>();
+
+    @Column(name = "search_vector", columnDefinition = "tsvector", insertable = false, updatable = false)
+    private String searchVector;
+
     public Product() {
     }
 
@@ -150,5 +156,13 @@ public class Product {
 
     public void setSpecifications(List<SpecValue> specifications) {
         this.specifications = specifications;
+    }
+
+    public List<Review> getReviews() {
+        return reviews;
+    }
+
+    public void setReviews(List<Review> reviews) {
+        this.reviews = reviews;
     }
 }

@@ -43,3 +43,9 @@ export interface UserUpdateRequest {
     role?: Role;
     password?: string;
 }
+
+export interface ChangePasswordRequest {
+    oldPassword: string;
+    newPassword: string;
+}
+

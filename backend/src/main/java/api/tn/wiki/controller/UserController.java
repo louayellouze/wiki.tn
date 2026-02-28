@@ -27,27 +27,37 @@ public class UserController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<User> getCurrentUser() {
-        return userService.getCurrentUser()
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<UserResponse> getCurrentUser() {
+        User user = userService.getCurrentUser().orElse(null);
+        if (user == null) {
+            return ResponseEntity.notFound().build();
+        }
+        
+        UserResponse resp = new UserResponse(
+                user.getId(),
+                user.getUsername(),
+                user.getEmail(),
+                user.getLastName(),
+                user.getFirstName(),
+                user.getAddress(),
+                user.getPhone(),
+                user.getRole() != null ? user.getRole().name() : "CLIENT",
+                user.getImageUrl()
+        );
+        return ResponseEntity.ok(resp);
     }
 
     @GetMapping
-    public ResponseEntity<?> getAllUsers() {
+    public ResponseEntity<List<UserResponse>> getAllUsers() {
         if (!hasPrivilegedAccess()) {
-            return ResponseEntity.status(403).body("Access Denied: privileged role required");
+            return ResponseEntity.status(403).build();
         }
 
         try {
-            System.out.println("DEBUG: Starting getAllUsers manually...");
-            
             List<User> rawUsers;
             if (isInfoline() && !isAdmin()) {
-                // Infoline can only see users with the CLIENT role
                 rawUsers = userService.getClients();
             } else {
-                // Admin and Webmaster can see all users
                 rawUsers = userService.getAllUsers();
             }
 
@@ -60,20 +70,20 @@ public class UserController {
                             u.getFirstName(),
                             u.getAddress(),
                             u.getPhone(),
-                            u.getRole() != null ? u.getRole().name() : "CLIENT"
+                            u.getRole() != null ? u.getRole().name() : "CLIENT",
+                            u.getImageUrl()
                     ))
                     .collect(Collectors.toList());
             return ResponseEntity.ok(users);
         } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(500).body("Error: " + e.getMessage());
+            return ResponseEntity.status(500).build();
         }
     }
 
     @GetMapping("/clients")
-    public ResponseEntity<?> getClients() {
+    public ResponseEntity<List<UserResponse>> getClients() {
         if (!hasPrivilegedAccess()) {
-            return ResponseEntity.status(403).body("Access Denied: Privileged role required");
+            return ResponseEntity.status(403).build();
         }
         try {
             List<User> rawUsers = userService.getClients();
@@ -86,12 +96,13 @@ public class UserController {
                             u.getFirstName(),
                             u.getAddress(),
                             u.getPhone(),
-                            u.getRole().name()
+                            u.getRole() != null ? u.getRole().name() : "CLIENT",
+                            u.getImageUrl()
                     ))
                     .collect(Collectors.toList());
             return ResponseEntity.ok(users);
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Error fetching clients: " + e.getMessage());
+            return ResponseEntity.status(500).build();
         }
     }
 
@@ -112,36 +123,40 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getUserById(@PathVariable Integer id) {
-        return userService.findById(id)
-                .map(u -> new UserResponse(
-                        u.getId(),
-                        u.getUsername(),
-                        u.getEmail(),
-                        u.getLastName(),
-                        u.getFirstName(),
-                        u.getAddress(),
-                        u.getPhone(),
-                        u.getRole() != null ? u.getRole().name() : "CLIENT"
-                ))
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<UserResponse> getUserById(@PathVariable Integer id) {
+        User user = userService.findById(id).orElse(null);
+        if (user == null) {
+            return ResponseEntity.notFound().build();
+        }
+        
+        UserResponse resp = new UserResponse(
+                user.getId(),
+                user.getUsername(),
+                user.getEmail(),
+                user.getLastName(),
+                user.getFirstName(),
+                user.getAddress(),
+                user.getPhone(),
+                user.getRole() != null ? user.getRole().name() : "CLIENT",
+                user.getImageUrl()
+        );
+        return ResponseEntity.ok(resp);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateUser(@PathVariable Integer id, @RequestBody UserUpdateRequest request) {
+    public ResponseEntity<UserResponse> updateUser(@PathVariable Integer id, @RequestBody UserUpdateRequest request) {
         // Admin or the user themselves can update
         User currentUser = userService.getCurrentUser().orElse(null);
         if (currentUser == null) return ResponseEntity.status(401).build();
 
         boolean isSelf = currentUser.getId().equals(id);
         if (!isAdmin() && !isSelf) {
-            return ResponseEntity.status(403).body("Access Denied: You can only update your own profile");
+            return ResponseEntity.status(403).build();
         }
 
         try {
             User updated = userService.updateUser(id, request);
-            return ResponseEntity.ok(new UserResponse(
+            UserResponse resp = new UserResponse(
                     updated.getId(),
                     updated.getUsername(),
                     updated.getEmail(),
@@ -149,10 +164,12 @@ public class UserController {
                     updated.getFirstName(),
                     updated.getAddress(),
                     updated.getPhone(),
-                    updated.getRole() != null ? updated.getRole().name() : "CLIENT"
-            ));
+                    updated.getRole() != null ? updated.getRole().name() : "CLIENT",
+                    updated.getImageUrl()
+            );
+            return ResponseEntity.ok(resp);
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Error updating user: " + e.getMessage());
+            return ResponseEntity.status(500).build();
         }
     }
 

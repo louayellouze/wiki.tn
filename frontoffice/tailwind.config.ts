@@ -1,0 +1,29 @@
+import type { Config } from 'tailwindcss'
+
+const config: Config = {
+  content: [
+    './pages/**/*.{js,ts,jsx,tsx,mdx}',
+    './common/**/*.{js,ts,jsx,tsx,mdx}',
+    './app/**/*.{js,ts,jsx,tsx,mdx}',
+    './modules/**/*.{js,ts,jsx,tsx,mdx}',
+  ],
+  theme: {
+    extend: {
+      colors: {
+        wiki: {
+          DEFAULT: '#63d36e',
+          dark: '#059669', // A deeper green for stability
+          light: '#a7f3d0',
+          btn: '#064e3b', // Very dark forest green for buttons (matching & stable)
+        }
+      },
+      backgroundImage: {
+        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+        'gradient-conic':
+          'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
+      },
+    },
+  },
+  plugins: [require("@tailwindcss/forms")],
+}
+export default config

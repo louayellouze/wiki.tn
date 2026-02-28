@@ -26,6 +26,7 @@ export interface Product {
     categories: Category[];
     codeSage: string;
     stockStatus: StockStatus;
+    imageUrl?: string;
     images: ImageDto[];
     specifications: SpecificationDto[];
 }
@@ -61,5 +62,4 @@ export interface ProductUpdateRequest {
 export interface SpecKey {
     id: number;
     name: string;
-    type?: string;
 }

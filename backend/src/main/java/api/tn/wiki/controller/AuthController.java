@@ -1,5 +1,6 @@
 package api.tn.wiki.controller;
 
+import api.tn.wiki.dto.request.GoogleAuthRequest;
 import api.tn.wiki.dto.request.LoginRequest;
 import api.tn.wiki.dto.internal.TokenDto;
 import api.tn.wiki.dto.request.ForgotPasswordRequest;
@@ -17,7 +18,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("/api/auth")
 public class AuthController {
 
     private final AuthService authService;
@@ -97,6 +98,27 @@ public class AuthController {
             return ResponseEntity.ok(new MessageResponse("Votre mot de passe a été réinitialisé avec succès"));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage()));
+        }
+    }
+
+    @PostMapping("/google")
+    public ResponseEntity<AuthenticationResponse> loginWithGoogle(@RequestBody GoogleAuthRequest request, HttpServletResponse response) {
+        try {
+            TokenDto tokens = authService.loginWithGoogle(request.getIdToken());
+            
+            ResponseCookie cookie = ResponseCookie.from("refresh_token", tokens.refreshToken())
+                    .httpOnly(true)
+                    .secure(false) // Set to true in production with HTTPS
+                    .path("/")
+                    .maxAge(7 * 24 * 60 * 60) // 7 days
+                    .sameSite("Lax")
+                    .build();
+            
+            response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+            
+            return ResponseEntity.ok(new AuthenticationResponse(tokens.accessToken()));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new AuthenticationResponse(e.getMessage()));
         }
     }
 }

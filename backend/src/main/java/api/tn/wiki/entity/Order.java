@@ -33,6 +33,13 @@ public class Order {
     @Column(name = "postal_code", nullable = true)
     private String postalCode;
 
+    @Column(nullable = true)
+    private String phone;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_method", nullable = false, columnDefinition = "varchar(255) default 'CASH_ON_DELIVERY'")
+    private PaymentMethod paymentMethod;
+
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderItem> items = new ArrayList<>();
 
@@ -104,12 +111,28 @@ public class Order {
         this.postalCode = postalCode;
     }
 
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
+
     public List<OrderItem> getItems() {
         return items;
     }
 
     public void setItems(List<OrderItem> items) {
         this.items = items;
+    }
+
+    public PaymentMethod getPaymentMethod() {
+        return paymentMethod;
+    }
+
+    public void setPaymentMethod(PaymentMethod paymentMethod) {
+        this.paymentMethod = paymentMethod;
     }
 
     public void addItem(OrderItem item) {

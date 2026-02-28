@@ -1,7 +1,7 @@
 import { jwtDecode } from "jwt-decode";
-import { setCookie, deleteCookie, getCookie } from "cookies-next";
+import { setCookie, deleteCookie } from "cookies-next";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8089";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8089/api";
 
 interface JwtPayload {
     sub: string;
@@ -9,10 +9,24 @@ interface JwtPayload {
     exp: number;
 }
 
+interface ApiError {
+    error?: string;
+    message?: string;
+    text?: string;
+}
+
+interface AuthResponse {
+    accessToken: string;
+}
+
+interface MessageResponse {
+    message: string;
+}
+
 /**
  * Enhanced fetch wrapper with automatic token refresh
  */
-export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
+export const apiFetch = async <T>(endpoint: string, options: RequestInit = {}): Promise<T> => {
     let token: string | null = null;
 
     if (typeof window !== "undefined") {
@@ -20,7 +34,6 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
     } else {
         // Server-side: Try to get token from cookies
         try {
-            // Dynamically import next/headers to avoid client-side bundling errors
             const { cookies } = await import("next/headers");
             const cookieStore = await cookies();
             token = cookieStore.get("token")?.value || null;
@@ -32,7 +45,7 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
     const getHeaders = (t: string | null) => ({
         "Content-Type": "application/json",
         ...(t ? { "Authorization": `Bearer ${t}` } : {}),
-        ...options.headers,
+        ...(options.headers as Record<string, string> || {}),
     });
 
     try {
@@ -43,36 +56,30 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
 
         // Handle Token Expiration (401)
         if (response.status === 401 && !endpoint.includes("/auth/refresh")) {
-            // Only attempt refresh on the client.
-            // On the server, we don't have access to HttpOnly refresh cookies for the refresh call.
             if (typeof window === "undefined") {
                 throw new Error("Authentification requise");
             }
 
             console.log("Token expiré, tentative de rafraîchissement...");
 
-            // Try to refresh using the HttpOnly cookie (handled by browser)
             const refreshRes = await fetch(`${API_URL}/auth/refresh`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                // credentials: "include" is crucial for sending/receiving HttpOnly cookies
-                credentials: "include" as any,
+                credentials: "include",
             });
 
             if (refreshRes.ok) {
-                const data = await refreshRes.json();
+                const data: AuthResponse = await refreshRes.json();
                 const newToken = data.accessToken;
 
                 localStorage.setItem("token", newToken);
                 setCookie("token", newToken, { maxAge: 60 * 60 * 24 * 7 }); // 7 days
 
-                // Retry original request with new token
                 response = await fetch(`${API_URL}${endpoint}`, {
                     ...options,
                     headers: getHeaders(newToken),
                 });
             } else {
-                // Refresh failed, logout
                 logout();
                 throw new Error("Session expirée");
             }
@@ -80,30 +87,30 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
 
         if (!response.ok) {
             let errorMessage = "Une erreur est survenue";
-            let errorData = {};
+            let errorData: ApiError = {};
 
             try {
                 const text = await response.text();
                 try {
                     errorData = JSON.parse(text);
-                    errorMessage = (errorData as any).error || (errorData as any).message || (errorData as any).text || errorMessage;
+                    errorMessage = errorData.error || errorData.message || errorData.text || errorMessage;
                 } catch (e) {
                     errorMessage = text || errorMessage;
                 }
             } catch (e) {
-                // fall through to default message
+                // fall through
             }
 
-            const error: any = new Error(errorMessage);
+            const error = new Error(errorMessage) as any;
             error.response = { data: errorData };
             throw error;
         }
 
         const responseText = await response.text();
         try {
-            return JSON.parse(responseText);
+            return JSON.parse(responseText) as T;
         } catch (e) {
-            return { message: responseText };
+            return { message: responseText } as unknown as T;
         }
     } catch (error) {
         console.error("API Fetch Error:", error);
@@ -143,20 +150,20 @@ export const isWebmaster = () => getUserRole()?.toUpperCase().includes("WEBMASTE
 export const isInfoline = () => getUserRole()?.toUpperCase().includes("INFOLINE") || false;
 
 
-export const login = async (username: string, password: string): Promise<any> => {
+export const login = async (username: string, password: string): Promise<AuthResponse> => {
     const response = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
-        credentials: "include" as any, // Important for receiving HttpOnly cookies
+        credentials: "include",
     });
 
     if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
+        const errorData: ApiError = await response.json().catch(() => ({}));
         throw new Error(errorData.message || "Identifiants invalides");
     }
 
-    const data = await response.json();
+    const data: AuthResponse = await response.json();
     if (typeof window !== "undefined") {
         localStorage.setItem("token", data.accessToken);
         setCookie("token", data.accessToken, { maxAge: 60 * 60 * 24 * 7 }); // 7 days
@@ -164,26 +171,26 @@ export const login = async (username: string, password: string): Promise<any> =>
     return data;
 };
 
-export const forgotPassword = async (identifier: string): Promise<any> => {
-    return apiFetch("/auth/forgot-password", {
+export const forgotPassword = async (identifier: string): Promise<MessageResponse> => {
+    return apiFetch<MessageResponse>("/auth/forgot-password", {
         method: "POST",
         body: JSON.stringify({ identifier }),
     });
 };
 
-export const resetPassword = async (token: string, password: string): Promise<any> => {
-    return apiFetch("/auth/reset-password", {
+export const resetPassword = async (token: string, password: string): Promise<MessageResponse> => {
+    return apiFetch<MessageResponse>("/auth/reset-password", {
         method: "POST",
         body: JSON.stringify({ token, password }),
     });
 };
 
-export const logout = async () => {
+export const logout = async (): Promise<void> => {
     if (typeof window !== "undefined") {
         try {
             await fetch(`${API_URL}/auth/logout`, {
                 method: "POST",
-                credentials: "include" as any
+                credentials: "include"
             });
         } catch (e) {
             console.error("Logout error:", e);

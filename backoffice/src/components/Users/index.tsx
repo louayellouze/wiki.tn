@@ -26,6 +26,7 @@ const Users = () => {
     const [users, setUsers] = useState<UserResponse[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
+    const [selectedRole, setSelectedRole] = useState<Role | "all">("all");
 
     // Modal state
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -173,20 +174,24 @@ const Users = () => {
 
     const filteredUsers = users.filter(u => {
         // Apply Role Filtering first
-        if (isInfoline() && u.role !== "CLIENT") return false;
+        if (isClient && isInfoline() && u.role !== "CLIENT") return false;
 
         // Apply Search Filtering
         const search = searchTerm.toLowerCase();
-        return (
+        const matchesSearch = (
             u.username.toLowerCase().includes(search) ||
             u.email.toLowerCase().includes(search) ||
             u.firstName.toLowerCase().includes(search) ||
             u.lastName.toLowerCase().includes(search)
         );
+
+        const matchesRole = selectedRole === "all" || u.role === selectedRole;
+
+        return matchesSearch && matchesRole;
     });
 
     return (
-        <div className="mx-auto max-w-7xl p-4 sm:p-6 text-gray-900 dark:text-white">
+        <div className="mx-auto max-w-full py-4 sm:py-6 text-gray-900 dark:text-white">
             <div className="mb-8 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
                 <div>
                     <h1 className="text-3xl font-extrabold tracking-tight">Gestion des Utilisateurs</h1>
@@ -203,8 +208,8 @@ const Users = () => {
                 )}
             </div>
 
-            <div className="mb-6">
-                <div className="relative group">
+            <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center">
+                <div className="relative group flex-1">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-500 transition-colors" size={20} />
                     <input
                         type="text"
@@ -214,6 +219,21 @@ const Users = () => {
                         className="w-full rounded-2xl border border-gray-200 bg-white py-3.5 pl-12 pr-4 shadow-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 dark:border-gray-700 dark:bg-gray-800 transition-all font-medium"
                     />
                 </div>
+                {isClient && isAdmin() && (
+                    <div className="w-full sm:w-64">
+                        <select
+                            value={selectedRole}
+                            onChange={(e) => setSelectedRole(e.target.value as Role | "all")}
+                            className="w-full rounded-2xl border border-gray-200 bg-white py-3.5 px-4 shadow-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 dark:border-gray-700 dark:bg-gray-800 transition-all font-medium text-gray-500"
+                        >
+                            <option value="all">Tous les rôles</option>
+                            <option value="ADMIN">Administrateur</option>
+                            <option value="WEBMASTER">Webmaster</option>
+                            <option value="INFOLINE">Infoline</option>
+                            <option value="CLIENT">Client</option>
+                        </select>
+                    </div>
+                )}
             </div>
 
             <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-800">

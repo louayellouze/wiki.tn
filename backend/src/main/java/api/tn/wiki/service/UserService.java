@@ -58,6 +58,7 @@ public class UserService {
         }
         if (request.getAddress() != null) user.setAddress(request.getAddress());
         if (request.getPhone() != null) user.setPhone(request.getPhone());
+        if (request.getImageUrl() != null) user.setImageUrl(request.getImageUrl());
         
         if (request.getRole() != null) {
             try {

@@ -9,8 +9,9 @@ public class UserResponse {
     private String address;
     private String phone;
     private String role;
+    private String imageUrl;
 
-    public UserResponse(Integer id, String username, String email, String lastName, String firstName, String address, String phone, String role) {
+    public UserResponse(Integer id, String username, String email, String lastName, String firstName, String address, String phone, String role, String imageUrl) {
         this.id = id;
         this.username = username;
         this.email = email;
@@ -19,6 +20,7 @@ public class UserResponse {
         this.address = address;
         this.phone = phone;
         this.role = role;
+        this.imageUrl = imageUrl;
     }
 
     public Integer getId() { return id; }
@@ -29,4 +31,5 @@ public class UserResponse {
     public String getAddress() { return address; }
     public String getPhone() { return phone; }
     public String getRole() { return role; }
+    public String getImageUrl() { return imageUrl; }
 }

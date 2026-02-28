@@ -16,8 +16,6 @@ public class SpecKey {
     @Column(nullable = false, unique = true)
     private String name;
 
-    private String type;
-
     @OneToMany(mappedBy = "specKey", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<SpecValue> specValues = new ArrayList<>();
 
@@ -39,14 +37,6 @@ public class SpecKey {
 
     public void setName(String name) {
         this.name = name;
-    }
-
-    public String getType() {
-        return type;
-    }
-
-    public void setType(String type) {
-        this.type = type;
     }
 
     public List<SpecValue> getSpecValues() {

@@ -2,29 +2,29 @@ import { apiFetch } from "./auth.service";
 import { Product, ProductCreateRequest, ProductUpdateRequest } from "../dtos/product.dto";
 
 export const getProducts = async (): Promise<Product[]> => {
-    return apiFetch("/api/v1/products");
+    return apiFetch<Product[]>("/v1/products");
 };
 
 export const getProductById = async (id: number): Promise<Product> => {
-    return apiFetch(`/api/v1/products/${id}`);
+    return apiFetch<Product>(`/v1/products/${id}`);
 };
 
 export const createProduct = async (data: ProductCreateRequest): Promise<Product> => {
-    return apiFetch("/api/v1/products", {
+    return apiFetch<Product>("/v1/products", {
         method: "POST",
         body: JSON.stringify(data),
     });
 };
 
 export const updateProduct = async (id: number, data: ProductUpdateRequest): Promise<Product> => {
-    return apiFetch(`/api/v1/products/${id}`, {
+    return apiFetch<Product>(`/v1/products/${id}`, {
         method: "PUT",
         body: JSON.stringify(data),
     });
 };
 
 export const deleteProduct = async (id: number): Promise<void> => {
-    return apiFetch(`/api/v1/products/${id}`, {
+    return apiFetch<void>(`/v1/products/${id}`, {
         method: "DELETE",
     });
 };
