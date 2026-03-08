@@ -90,15 +90,54 @@ public class ProductService {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
         
-        List<ProductResponse> results = productRepository.searchProducts(query).stream()
+        String trimmed = query.trim().replaceAll("\\s+", " ");
+        String[] words = trimmed.split(" ");
+        StringBuilder prefixBuilder = new StringBuilder();
+        for (int i = 0; i < words.length; i++) {
+            if (!words[i].isEmpty()) {
+                if (prefixBuilder.length() > 0) prefixBuilder.append(" & ");
+                prefixBuilder.append(words[i]);
+                if (i == words.length - 1) prefixBuilder.append(":*");
+            }
+        }
+        String queryPrefix = prefixBuilder.toString();
+
+        List<ProductResponse> results = productRepository.searchProducts(queryPrefix, trimmed).stream()
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
         
         stopWatch.stop();
-        logger.info("Recherche pour '{}' exécutée en {} ms ({} résultats)", 
-                query, stopWatch.getTotalTimeMillis(), results.size());
+        logger.info("Recherche pour '{}' exécutée en {} ms (queryPrefix: '{}', {} résultats)", 
+                query, stopWatch.getTotalTimeMillis(), queryPrefix, results.size());
         
         return results;
+    }
+
+    @Transactional(readOnly = true)
+    public List<api.tn.wiki.dto.response.ProductSearchDto> searchProductsAutocomplete(String query) {
+        // Build prefix tsquery: "asus rog" -> "asus & rog:*"
+        // This allows tsvector prefix matching on the last typed word
+        String trimmed = query.trim().replaceAll("\\s+", " ");
+        String[] words = trimmed.split(" ");
+        StringBuilder prefixBuilder = new StringBuilder();
+        for (int i = 0; i < words.length; i++) {
+            if (!words[i].isEmpty()) {
+                if (prefixBuilder.length() > 0) prefixBuilder.append(" & ");
+                prefixBuilder.append(words[i]);
+                if (i == words.length - 1) prefixBuilder.append(":*");
+            }
+        }
+        String queryPrefix = prefixBuilder.toString();
+
+        List<Object[]> rows = productRepository.searchProductsAutocomplete(queryPrefix, trimmed);
+        return rows.stream().map(row -> new api.tn.wiki.dto.response.ProductSearchDto(
+                row[0] != null ? ((Number) row[0]).intValue() : null,
+                row[1] != null ? row[1].toString() : null,
+                row[2] != null ? ((Number) row[2]).doubleValue() : null,
+                row[3] != null ? ((Number) row[3]).doubleValue() : null,
+                row[4] != null ? row[4].toString() : null,
+                row[5] != null ? row[5].toString() : null
+        )).collect(Collectors.toList());
     }
 
     @Transactional
@@ -127,17 +166,19 @@ public class ProductService {
             }
         }
         
-        // AUTO-STATUS Logic (Refinement)
+        // AUTO-STATUS Logic (Enforced Refinement)
+        // AUTO-STATUS Logic (Flexible Refinement)
         if (product.getQuantity() != null) {
-            if (product.getQuantity() == 0) {
-                // If quantity is 0, must be HORS_STOCK unless it's En Arrivage or En Commande
-                if (product.getStockStatus() != StockStatus.EN_ARRIVAGE && product.getStockStatus() != StockStatus.EN_COMMANDE) {
+            if (product.getQuantity() <= 0) {
+                product.setQuantity(0);
+                // Force Hors Stock only if it was "En Stock"
+                if (product.getStockStatus() == StockStatus.EN_STOCK) {
                     product.setStockStatus(StockStatus.HORS_STOCK);
                 }
-            } else if (product.getQuantity() > 1) {
-                // If quantity is > 1 and it wasn't explicitly set to something else in request, or if it was HORS_STOCK
-                if (request.getStockStatus() == null || product.getStockStatus() == StockStatus.HORS_STOCK) {
-                     product.setStockStatus(StockStatus.EN_STOCK);
+            } else {
+                // Force En Stock only if it was "Hors Stock"
+                if (product.getStockStatus() == StockStatus.HORS_STOCK) {
+                    product.setStockStatus(StockStatus.EN_STOCK);
                 }
             }
         }
@@ -219,18 +260,18 @@ public class ProductService {
             }
         }
         
-        // AUTO-STATUS Logic
+        // AUTO-STATUS Logic (Enforced Refinement)
+        // AUTO-STATUS Logic (Flexible Refinement)
         if (product.getQuantity() != null) {
-            if (product.getQuantity() == 0) {
-                // If quantity is 0, must be HORS_STOCK unless it's En Arrivage or En Commande
-                if (product.getStockStatus() != StockStatus.EN_ARRIVAGE && product.getStockStatus() != StockStatus.EN_COMMANDE) {
+            if (product.getQuantity() <= 0) {
+                product.setQuantity(0);
+                // Force Hors Stock only if it was "En Stock"
+                if (product.getStockStatus() == StockStatus.EN_STOCK) {
                     product.setStockStatus(StockStatus.HORS_STOCK);
                 }
-            } else if (product.getQuantity() > 1) {
-                // If quantity becomes > 1 and it was HORS_STOCK/EN_ARRIVAGE/EN_COMMANDE, switch to EN_STOCK
-                // but only if the user didn't explicitly select another status in this request
-                if (request.getStockStatus() == null || request.getStockStatus().equalsIgnoreCase("HORS_STOCK") || 
-                    request.getStockStatus().equalsIgnoreCase("EN_ARRIVAGE") || request.getStockStatus().equalsIgnoreCase("EN_COMMANDE")) {
+            } else {
+                // Force En Stock only if it was "Hors Stock"
+                if (product.getStockStatus() == StockStatus.HORS_STOCK) {
                     product.setStockStatus(StockStatus.EN_STOCK);
                 }
             }
@@ -238,8 +279,12 @@ public class ProductService {
 
         // Update categories
         if (request.getCategoryIds() != null) {
-            List<Category> categories = categoryRepository.findAllById(request.getCategoryIds());
-            product.setCategories(new java.util.HashSet<>(categories));
+            if (request.getCategoryIds().isEmpty()) {
+                product.setCategories(new java.util.HashSet<>());
+            } else {
+                List<Category> categories = categoryRepository.findAllById(request.getCategoryIds());
+                product.setCategories(new java.util.HashSet<>(categories));
+            }
         }
 
         // Update images if provided - manage collection via entity with deduplication

@@ -193,6 +193,43 @@ const SignUp = () => {
                                 <div className="input-container">
                                     <div className="input-bg"></div>
                                     <input
+                                        type="tel"
+                                        id="phone"
+                                        name="phone"
+                                        required
+                                        autoComplete="tel"
+                                        placeholder=" "
+                                        value={formData.phone}
+                                        onChange={handleChange}
+                                    />
+                                    <label htmlFor="phone">Téléphone</label>
+                                    <div className="input-wave"></div>
+                                </div>
+                            </div>
+                            <div className="form-group">
+                                <div className="input-container">
+                                    <div className="input-bg"></div>
+                                    <input
+                                        type="text"
+                                        id="address"
+                                        name="address"
+                                        required
+                                        autoComplete="street-address"
+                                        placeholder=" "
+                                        value={formData.address}
+                                        onChange={handleChange}
+                                    />
+                                    <label htmlFor="address">Adresse</label>
+                                    <div className="input-wave"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-x-4 sm:grid-cols-2">
+                            <div className="form-group">
+                                <div className="input-container">
+                                    <div className="input-bg"></div>
+                                    <input
                                         type="password"
                                         id="password"
                                         name="password"

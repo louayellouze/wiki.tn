@@ -1,23 +1,28 @@
 import React from 'react'
+import Link from 'next/link'
 import { useCart } from '../../context/CartContext'
+import { useWishlist } from '../../context/WishlistContext'
 
 const CartSection = () => {
     const { totalItems, setIsDrawerOpen } = useCart();
+    const { totalItems: wishlistTotal } = useWishlist();
 
     return (
         <div className="flex items-center gap-2 md:gap-4">
             {/* Wishlist - Hidden on mobile, visible on lg+ */}
-            <div className="hidden lg:flex w-32 h-10 justify-center items-center gap-3 hover:bg-wiki-dark cursor-pointer rounded-lg">
-                <div className="justify-center items-center flex">
-                    <svg width="25" height="24" viewBox="0 0 25 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M13.4094 20.81C13.0694 20.93 12.5094 20.93 12.1694 20.81C9.26943 19.82 2.78943 15.69 2.78943 8.69001C2.78943 5.60001 5.27943 3.10001 8.34943 3.10001C10.1694 3.10001 11.7794 3.98001 12.7894 5.34001C13.7994 3.98001 15.4194 3.10001 17.2294 3.10001C20.2994 3.10001 22.7894 5.60001 22.7894 8.69001C22.7894 15.69 16.3094 19.82 13.4094 20.81Z" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            <Link href="/wishlist" className="hidden lg:flex w-32 h-10 justify-center items-center gap-3 hover:bg-wiki-dark cursor-pointer rounded-lg transition-colors">
+                <div className="justify-center items-center flex relative">
+                    <svg width="25" height="24" viewBox="0 0 25 24" fill="none" stroke="white" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M13.4094 20.81C13.0694 20.93 12.5094 20.93 12.1694 20.81C9.26943 19.82 2.78943 15.69 2.78943 8.69001C2.78943 5.60001 5.27943 3.10001 8.34943 3.10001C10.1694 3.10001 11.7794 3.98001 12.7894 5.34001C13.7994 3.98001 15.4194 3.10001 17.2294 3.10001C20.2994 3.10001 22.7894 5.60001 22.7894 8.69001C22.7894 15.69 16.3094 19.82 13.4094 20.81Z" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
-                    <div className="w-3.5 h-3.5 bg-wiki rounded-full flex-col justify-center items-center gap-2 inline-flex">
-                        <div className="text-white text-xs font-normal">0</div>
-                    </div>
+                    {wishlistTotal > 0 && (
+                        <div className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-wiki rounded-full flex justify-center items-center">
+                            <div className="text-white text-[10px] font-bold">{wishlistTotal}</div>
+                        </div>
+                    )}
                 </div>
                 <div className="text-white text-sm font-normal">Wishlist</div>
-            </div>
+            </Link>
 
             {/* Cart - Always visible */}
             <div

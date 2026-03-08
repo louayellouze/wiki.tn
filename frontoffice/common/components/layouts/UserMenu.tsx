@@ -4,11 +4,12 @@ import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { AuthService } from '@/common/services/authService'
+import { User as UserType } from '@/app/dtos/auth'
 
 const UserMenu = () => {
     const router = useRouter();
     const [isLoggedIn, setIsLoggedIn] = useState(false);
-    const [user, setUser] = useState<{ firstName: string; lastName: string } | null>(null);
+    const [user, setUser] = useState<UserType | null>(null);
     const [showDropdown, setShowDropdown] = useState(false);
 
     useEffect(() => {
@@ -22,68 +23,53 @@ const UserMenu = () => {
         }
     }, []);
 
-    const handleLogout = async () => {
-        try {
-            await AuthService.logout();
-        } catch (error) {
-            console.error("Logout failed", error);
-        } finally {
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('refreshToken');
-            setIsLoggedIn(false);
-            router.push('/'); // Redirect to homepage instead of login
-        }
-    };
-
     if (isLoggedIn) {
         return (
-            <div className="relative">
-                <div
-                    className="flex justify-center items-center gap-3 cursor-pointer"
-                    onClick={() => setShowDropdown(!showDropdown)}
+            <div className="flex items-center gap-3 md:gap-4">
+                <Link
+                    href="/profile"
+                    className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
+                    title="Mon profil"
                 >
                     <div className="flex justify-center items-center text-white">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="stroke-white" xmlns="http://www.w3.org/2000/svg">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
                             <path d="M12 12C14.7614 12 17 9.76142 17 7C17 4.23858 14.7614 2 12 2C9.23858 2 7 4.23858 7 7C7 9.76142 9.23858 12 12 12Z" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                             <path d="M20.5899 22C20.5899 18.13 16.7399 15 11.9999 15C7.25991 15 3.40991 18.13 3.40991 22" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                     </div>
-                    <div className="text-white text-sm font-normal hidden md:block">
+                    <div className="text-white text-sm font-medium hidden md:block">
                         {user ? `${user.firstName}` : 'Compte'}
                     </div>
-                </div>
+                </Link>
 
-                {showDropdown && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
-                        <Link href="/profile" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                            Profile
-                        </Link>
-                        <div
-                            onClick={handleLogout}
-                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
-                        >
-                            Sign out
-                        </div>
-                    </div>
+                {(user?.role === 'ADMIN' || user?.role === 'WEBMASTER' || user?.role === 'INFOLINE') && (
+                    <Link
+                        href="/admin/contact-messages"
+                        className="flex items-center justify-center w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+                        title="Messages Contact"
+                    >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                            <polyline points="22,6 12,13 2,6" />
+                        </svg>
+                    </Link>
                 )}
             </div>
         )
     }
 
     return (
-        <div className="flex justify-center items-center gap-2 md:gap-4">
-            <Link href="/auth/login" className="flex justify-center items-center gap-2 cursor-pointer">
-                <div className="flex justify-center items-center text-white">
-                    <svg width="20" height="20" className="md:w-6 md:h-6" viewBox="0 0 24 24" fill="none" stroke="white" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M12 12C14.7614 12 17 9.76142 17 7C17 4.23858 14.7614 2 12 2C9.23858 2 7 4.23858 7 7C7 9.76142 9.23858 12 12 12Z" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                        <path d="M20.5899 22C20.5899 18.13 16.7399 15 11.9999 15C7.25991 15 3.40991 18.13 3.40991 22" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                </div>
-                <div className="text-white text-xs md:text-sm font-normal hidden sm:block">Sign in</div>
-            </Link>
-            <Link href="/auth/signup" className="hidden sm:block">
-                <button className="bg-wiki-btn hover:bg-emerald-950 text-white text-xs md:text-sm font-semibold py-1.5 px-3 md:py-2 md:px-4 rounded-full transition-colors">
-                    Sign Up
+        <div className="flex justify-center items-center">
+            <Link href="/auth/login">
+                <button className="btn-liquid btn-liquid-login text-sm shadow-md">
+                    <span className="liquid"></span>
+                    <span className="button_text">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 12C14.7614 12 17 9.76142 17 7C17 4.23858 14.7614 2 12 2C9.23858 2 7 4.23858 7 7C7 9.76142 9.23858 12 12 12Z" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                            <path d="M20.5899 22C20.5899 18.13 16.7399 15 11.9999 15C7.25991 15 3.40991 18.13 3.40991 22" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        Connexion
+                    </span>
                 </button>
             </Link>
         </div>

@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 const ProfilePage = () => {
     const [user, setUser] = useState<User | null>(null);
@@ -22,6 +23,7 @@ const ProfilePage = () => {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
+    const router = useRouter();
 
     // Password change state
     const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -176,6 +178,18 @@ const ProfilePage = () => {
         }
     };
 
+    const handleLogout = async () => {
+        try {
+            await AuthService.logout();
+        } catch (error) {
+            console.error("Logout failed", error);
+        } finally {
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+            router.push('/');
+        }
+    };
+
     if (loading) {
         return (
             <div className="container mx-auto px-4 py-20 flex justify-center items-center">
@@ -296,9 +310,10 @@ const ProfilePage = () => {
                             </p>
                             <button
                                 onClick={() => setShowPasswordModal(true)}
-                                className="w-full py-2.5 text-xs font-bold text-white bg-wiki-btn rounded-lg shadow-md shadow-wiki-btn/20 hover:bg-emerald-800 transition-all uppercase tracking-wider"
+                                className="w-full text-xs font-bold text-white shadow-md shadow-wiki-btn/20 uppercase tracking-wider btn-liquid btn-liquid-login"
                             >
-                                Changer le mot de passe
+                                <span className="liquid"></span>
+                                <span className="button_text">Changer le mot de passe</span>
                             </button>
                         </Card>
 
@@ -316,6 +331,30 @@ const ProfilePage = () => {
                                 className="w-full py-2.5 text-xs font-bold text-wiki-btn bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-all uppercase tracking-wider border border-emerald-100"
                             >
                                 Consulter l'historique
+                            </button>
+                        </Card>
+
+                        {/* Logout Card */}
+                        <Card className="p-6 shadow-lg border-none bg-red-50/50 hover:bg-red-50 transition-colors overflow-hidden group">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="font-bold text-red-600 flex items-center gap-2">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                                        <polyline points="16 17 21 12 16 7"></polyline>
+                                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                                    </svg>
+                                    Session
+                                </h3>
+                            </div>
+                            <p className="text-xs text-red-500/80 mb-4 leading-relaxed font-medium">
+
+                            </p>
+                            <button
+                                onClick={handleLogout}
+                                className="w-full text-xs font-bold text-white shadow-md shadow-red-500/20 uppercase tracking-wider btn-liquid btn-liquid-logout"
+                            >
+                                <span className="liquid"></span>
+                                <span className="button_text">Déconnexion</span>
                             </button>
                         </Card>
                     </div>

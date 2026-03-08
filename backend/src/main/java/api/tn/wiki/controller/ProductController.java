@@ -2,6 +2,7 @@ package api.tn.wiki.controller;
 
 import api.tn.wiki.dto.request.ProductRequest;
 import api.tn.wiki.dto.response.ProductResponse;
+import api.tn.wiki.dto.response.ProductSearchDto;
 import api.tn.wiki.service.ProductService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -35,6 +36,17 @@ public class ProductController {
         try {
             List<ProductResponse> products = productService.searchProducts(q);
             return ResponseEntity.ok(products);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).build();
+        }
+    }
+
+    @GetMapping("/search/autocomplete")
+    public ResponseEntity<List<ProductSearchDto>> searchAutocomplete(@RequestParam String q) {
+        try {
+            if (q == null || q.trim().length() < 2) return ResponseEntity.ok(List.of());
+            return ResponseEntity.ok(productService.searchProductsAutocomplete(q.trim()));
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(500).build();

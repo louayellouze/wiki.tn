@@ -150,6 +150,21 @@ export const isWebmaster = () => getUserRole()?.toUpperCase().includes("WEBMASTE
 export const isInfoline = () => getUserRole()?.toUpperCase().includes("INFOLINE") || false;
 
 
+export const register = async (data: any): Promise<AuthResponse> => {
+    const response = await fetch(`${API_URL}/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+        const errorData: ApiError = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Erreur lors de l'inscription");
+    }
+
+    return await response.json();
+};
+
 export const login = async (username: string, password: string): Promise<AuthResponse> => {
     const response = await fetch(`${API_URL}/auth/login`, {
         method: "POST",

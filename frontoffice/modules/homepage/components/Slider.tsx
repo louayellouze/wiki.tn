@@ -93,7 +93,8 @@ const Slider = ({ banners, loading }: SliderProps) => {
                 <div className="flex-1 flex items-center justify-center">
                     <img
                         key={banner.id}
-                        className="max-w-full h-auto rounded-lg max-h-[350px] object-contain transition-opacity duration-500"
+                        onClick={() => handleClick(banner.linkUrl)}
+                        className="max-w-full h-auto rounded-lg max-h-[350px] object-contain transition-opacity duration-500 cursor-pointer hover:scale-105 transition-transform"
                         src={getImageUrl(banner.imageUrl)}
                         alt={banner.title}
                     />

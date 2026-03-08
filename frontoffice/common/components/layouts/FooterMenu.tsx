@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import React from 'react'
 
 const FooterMenu = () => {
@@ -59,7 +60,7 @@ const FooterMenu = () => {
                                 </div>
                                 <div className="justify-center items-center gap-3 inline-flex">
                                     <div className="w-2.5 h-2.5 bg-wiki/40 rounded-full" />
-                                    <a href='#' className="text-wiki-btn text-lg font-normal">Nos Magasins</a>
+                                    <Link href="/nos-magasins" className="text-wiki-btn text-lg font-normal hover:text-wiki transition-colors">Nos Magasins</Link>
                                 </div>
                                 <div className="justify-center items-center gap-3 inline-flex">
                                     <div className="w-2.5 h-2.5 bg-wiki/40 rounded-full" />
@@ -72,7 +73,7 @@ const FooterMenu = () => {
                             <div className="flex-col justify-center items-start gap-3.5 flex">
                                 <div className="justify-center items-center gap-3 inline-flex">
                                     <div className="w-2.5 h-2.5 bg-wiki/40 rounded-full" />
-                                    <a href='#' className="text-wiki-btn text-lg font-normal">Nous Contacter</a>
+                                    <Link href="/contact" className="text-wiki-btn text-lg font-normal">Nous Contacter</Link>
                                 </div>
                                 <div className="justify-center items-center gap-3 inline-flex">
                                     <div className="w-2.5 h-2.5 bg-wiki/40 rounded-full" />
@@ -93,7 +94,7 @@ const FooterMenu = () => {
                             <div className="flex-col justify-center items-start gap-3.5 flex">
                                 <div className="justify-center items-center gap-3 inline-flex">
                                     <div className="w-2.5 h-2.5 bg-wiki/40 rounded-full" />
-                                    <a href='#' className="text-wiki-btn text-lg font-normal">Blog</a>
+                                    <Link href="/blogs" className="text-wiki-btn text-lg font-normal hover:text-wiki transition-colors">Blog</Link>
                                 </div>
                                 <div className="justify-center items-center gap-3 inline-flex">
                                     <div className="w-2.5 h-2.5 bg-wiki/40 rounded-full" />

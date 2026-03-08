@@ -1,6 +1,15 @@
 import api from '@/common/utils/api';
 import { ProductResponse } from '@/app/dtos/product';
 
+export interface ProductSearchResult {
+    id: number;
+    title: string;
+    regularPrice: number;
+    discountPrice?: number;
+    stockStatus: string;
+    imageUrl?: string;
+}
+
 export const ProductService = {
     getAllProducts: async (): Promise<ProductResponse[]> => {
         const response = await api.get<ProductResponse[]>('/v1/products');
@@ -14,6 +23,11 @@ export const ProductService = {
 
     searchProducts: async (query: string): Promise<ProductResponse[]> => {
         const response = await api.get<ProductResponse[]>(`/v1/products/search?q=${encodeURIComponent(query)}`);
+        return response.data;
+    },
+
+    searchProductsAutocomplete: async (query: string): Promise<ProductSearchResult[]> => {
+        const response = await api.get<ProductSearchResult[]>(`/v1/products/search/autocomplete?q=${encodeURIComponent(query)}`);
         return response.data;
     },
 

@@ -10,6 +10,7 @@ import { ProductResponse } from '@/app/dtos/product'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useCart } from '@/common/context/CartContext'
+import { useWishlist } from '@/common/context/WishlistContext'
 
 import { ReviewService } from '@/common/services/reviewService'
 import { formatPrice } from '@/common/utils/format'
@@ -24,16 +25,35 @@ const ProductDetails = () => {
   const [quantity, setQuantity] = useState(1);
   const router = useRouter();
   const { addToCart } = useCart();
+  const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist();
+
+  const isLoved = product ? isInWishlist(product.id) : false;
 
   // Review state
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [currentUsername, setCurrentUsername] = useState<string | null>(null);
   const [userRating, setUserRating] = useState(5);
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [reviewError, setReviewError] = useState('');
+  const [editingReviewId, setEditingReviewId] = useState<number | null>(null);
+  const [editRating, setEditRating] = useState(5);
 
   useEffect(() => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
     setIsLoggedIn(!!token);
+
+    if (token) {
+      try {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const payload = JSON.parse(decodeURIComponent(atob(base64).split('').map(c =>
+          '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+        ).join('')));
+        setCurrentUsername(payload.sub || null);
+      } catch {
+        setCurrentUsername(null);
+      }
+    }
 
     const fetchProduct = async () => {
       if (!id) return;
@@ -83,6 +103,29 @@ const ProductDetails = () => {
       setReviewError("Une erreur est survenue lors de l'envoi de votre avis.");
     } finally {
       setIsSubmittingReview(false);
+    }
+  };
+
+  const handleUpdateReview = async (reviewId: number) => {
+    if (!product) return;
+    try {
+      await ReviewService.updateReview(reviewId, editRating);
+      const updatedProduct = await ProductService.getProductById(product.id);
+      setProduct(updatedProduct);
+      setEditingReviewId(null);
+    } catch (err) {
+      console.error('Failed to update review', err);
+    }
+  };
+
+  const handleDeleteReview = async (reviewId: number) => {
+    if (!product || !confirm('Êtes-vous sûr de vouloir supprimer votre avis ?')) return;
+    try {
+      await ReviewService.deleteReview(reviewId);
+      const updatedProduct = await ProductService.getProductById(product.id);
+      setProduct(updatedProduct);
+    } catch (err) {
+      console.error('Failed to delete review', err);
     }
   };
 
@@ -167,9 +210,9 @@ const ProductDetails = () => {
                 src={mainImage || '/assets/img/2-1.png'}
                 alt={product.title}
               />
-              {product.discountPrice && (
+              {(product.discountPrice ?? 0) > 0 && (
                 <div className="absolute top-6 left-6 bg-rose-600 text-white px-4 py-1.5 rounded-full text-sm font-bold shadow-lg">
-                  SALE -{Math.round((1 - product.discountPrice / product.regularPrice) * 100)}%
+                  SALE -{Math.round((1 - (product.discountPrice || 0) / product.regularPrice) * 100)}%
                 </div>
               )}
             </div>
@@ -192,9 +235,12 @@ const ProductDetails = () => {
             <div className="flex flex-col gap-4">
               <div className="flex items-center gap-2">
                 {product.categories?.[0] && (
-                  <span className="text-xs font-bold uppercase tracking-widest text-wiki-dark bg-wiki-light/20 px-3 py-1 rounded-full">
+                  <Link
+                    href={`/products?category=${product.categories[0].id}`}
+                    className="text-xs font-bold uppercase tracking-widest text-wiki-dark bg-wiki-light/20 px-3 py-1 rounded-full hover:bg-wiki hover:text-white transition-all"
+                  >
                     {product.categories[0].name}
-                  </span>
+                  </Link>
                 )}
                 <div className="flex items-center gap-1.5 ml-auto">
                   {(() => {
@@ -254,7 +300,7 @@ const ProductDetails = () => {
                 <div className="text-wiki-btn text-4xl md:text-5xl font-black">
                   {formatPrice(product.discountPrice || product.regularPrice)}
                 </div>
-                {product.discountPrice && (
+                {(product.discountPrice ?? 0) > 0 && (
                   <div className="text-slate-400 text-xl line-through font-medium">
                     {formatPrice(product.regularPrice)}
                   </div>
@@ -315,8 +361,14 @@ const ProductDetails = () => {
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
                   Acheter maintenant
                 </button>
-                <button className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center hover:bg-rose-50 transition-all group border border-slate-100">
-                  <svg className="w-7 h-7 stroke-slate-400 group-hover:stroke-rose-500 group-hover:fill-rose-500 transition-all" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <button
+                  onClick={() => {
+                    if (product) {
+                      isLoved ? removeFromWishlist(product.id) : addToWishlist(product);
+                    }
+                  }}
+                  className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all group border ${isLoved ? 'bg-rose-50 border-rose-100' : 'bg-slate-50 border-slate-100 hover:bg-rose-50'}`}>
+                  <svg className={`w-7 h-7 transition-all ${isLoved ? 'stroke-rose-500 fill-rose-500' : 'stroke-slate-400 group-hover:stroke-rose-500 group-hover:fill-rose-500'}`} fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                   </svg>
                 </button>
@@ -423,67 +475,109 @@ const ProductDetails = () => {
                           ))}
                         </div>
                       </div>
-                  </div>
-                      </div>
                       {reviewError && <p className="text-rose-600 text-sm font-medium">{reviewError}</p>}
-            <button
-              type="submit"
-              disabled={isSubmittingReview}
-              className="bg-wiki-btn text-white px-8 py-3 rounded-xl font-bold hover:bg-emerald-950 transition-all flex items-center gap-2 disabled:opacity-50"
-            >
-              {isSubmittingReview ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-              ) : 'Publier mon avis'}
-            </button>
-          </form>
-        </div>
-        ) : (
-        <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl p-10 text-center">
-          <p className="text-slate-600 font-medium mb-4">Vous devez être connecté pour donner votre avis.</p>
-          <Link href="/auth/login">
-            <button className="bg-wiki-btn text-white px-8 py-2.5 rounded-full font-bold hover:bg-emerald-950 transition-all">Se connecter</button>
-          </Link>
-        </div>
+                      <button
+                        type="submit"
+                        disabled={isSubmittingReview}
+                        className="bg-wiki-btn text-white px-8 py-3 rounded-xl font-bold hover:bg-emerald-950 transition-all flex items-center gap-2 disabled:opacity-50"
+                      >
+                        {isSubmittingReview ? (
+                          <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        ) : 'Publier mon avis'}
+                      </button>
+                    </form>
+                  </div>
+                ) : (
+                  <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl p-10 text-center">
+                    <p className="text-slate-600 font-medium mb-4">Vous devez être connecté pour donner votre avis.</p>
+                    <Link href="/auth/login">
+                      <button className="bg-wiki-btn text-white px-8 py-2.5 rounded-full font-bold hover:bg-emerald-950 transition-all">Se connecter</button>
+                    </Link>
+                  </div>
                 )}
 
-        {/* Reviews List */}
-        <div className="space-y-6">
-          <h3 className="text-2xl font-black text-slate-900 flex items-center gap-3 italic">
-            Avis récents
-            <div className="h-1 flex-1 bg-slate-100 rounded-full"></div>
-          </h3>
+                {/* Reviews List */}
+                <div className="space-y-6">
+                  <h3 className="text-2xl font-black text-slate-900 flex items-center gap-3 italic">
+                    Avis récents
+                    <div className="h-1 flex-1 bg-slate-100 rounded-full"></div>
+                  </h3>
 
-          {product.reviews && product.reviews.length > 0 ? (
-            <div className="grid gap-6">
-              {product.reviews.map((review) => (
-                <div key={review.id} className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm hover:shadow-md transition-shadow">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-wiki-light/10 rounded-2xl flex items-center justify-center text-wiki-dark font-black text-xl">
-                        {review.userFullName.charAt(0)}
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-slate-800">{review.userFullName}</h4>
-                        <p className="text-xs text-slate-400 font-medium">{new Date(review.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
-                      </div>
+                  {product.reviews && product.reviews.length > 0 ? (
+                    <div className="grid gap-6">
+                      {product.reviews.map((review) => {
+                        const isOwner = currentUsername && review.username === currentUsername;
+                        const isEditing = editingReviewId === review.id;
+                        return (
+                          <div key={review.id} className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm hover:shadow-md transition-shadow">
+                            <div className="flex justify-between items-center">
+                              <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-wiki-light/10 rounded-2xl flex items-center justify-center text-wiki-dark font-black text-xl">
+                                  {review.userFullName.charAt(0)}
+                                </div>
+                                <div>
+                                  <h4 className="font-bold text-slate-800">{review.userFullName}</h4>
+                                  <p className="text-xs text-slate-400 font-medium">{new Date(review.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                {isEditing ? (
+                                  <div className="flex items-center gap-2">
+                                    <div className="flex gap-1">
+                                      {[1, 2, 3, 4, 5].map(s => (
+                                        <button key={s} type="button" onClick={() => setEditRating(s)} className="focus:outline-none">
+                                          <Star rating={s <= editRating ? s : 0} size={18} activeColor="#059669" />
+                                        </button>
+                                      ))}
+                                    </div>
+                                    <button onClick={() => handleUpdateReview(review.id)} className="text-xs bg-wiki-btn text-white px-3 py-1.5 rounded-lg font-bold hover:bg-emerald-950 transition-all">
+                                      Sauvegarder
+                                    </button>
+                                    <button onClick={() => setEditingReviewId(null)} className="text-xs bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg font-bold hover:bg-slate-200 transition-all">
+                                      Annuler
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <>
+                                    <Star rating={review.rating} size={16} activeColor="#059669" />
+                                    {isOwner && (
+                                      <div className="flex items-center gap-1.5 ml-2">
+                                        <button
+                                          onClick={() => { setEditingReviewId(review.id); setEditRating(review.rating); }}
+                                          className="w-8 h-8 bg-slate-100 hover:bg-wiki-light/20 rounded-lg flex items-center justify-center transition-colors"
+                                          title="Modifier"
+                                        >
+                                          <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                        </button>
+                                        <button
+                                          onClick={() => handleDeleteReview(review.id)}
+                                          className="w-8 h-8 bg-rose-50 hover:bg-rose-100 rounded-lg flex items-center justify-center transition-colors"
+                                          title="Supprimer"
+                                        >
+                                          <svg className="w-4 h-4 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                        </button>
+                                      </div>
+                                    )}
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                    <Star rating={review.rating} size={14} activeColor="#059669" />
-                  </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <p className="text-slate-400 italic">Soyez le premier à donner votre avis sur ce produit !</p>
+                    </div>
+                  )}
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <p className="text-slate-400 italic">Soyez le premier à donner votre avis sur ce produit !</p>
-            </div>
-          )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
-            )}
     </div>
-        </div >
-      </div >
-    </div >
   )
 }
 

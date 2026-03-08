@@ -83,6 +83,12 @@ export const NAV_DATA = [
         items: [],
       },
       {
+        title: "Messages Contact",
+        url: "/contact-messages",
+        icon: Icons.Mail,
+        items: [],
+      },
+      {
         title: "Pages",
         icon: Icons.Alphabet,
         items: [

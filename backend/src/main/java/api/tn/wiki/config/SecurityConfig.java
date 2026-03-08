@@ -49,7 +49,8 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(jwtAuthenticationEntryPoint))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/v1/contact/**", "/api/v1/contact").permitAll()
+                        .requestMatchers("/api/auth/**", "/error").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/products/**", "/api/v1/categories/**", "/api/v1/hero-banners/**", "/api/v1/spec-keys/**").permitAll()
                         .requestMatchers("/api/v1/orders/**").authenticated()
                         .anyRequest().authenticated()

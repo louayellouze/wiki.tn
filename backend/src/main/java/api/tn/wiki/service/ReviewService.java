@@ -59,6 +59,34 @@ public class ReviewService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
+    public ReviewResponse updateReview(Long reviewId, ReviewRequest request) {
+        User user = getCurrentUser();
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new RuntimeException("Review not found"));
+
+        if (!review.getUser().getUsername().equals(user.getUsername())) {
+            throw new RuntimeException("Unauthorized: You can only edit your own reviews");
+        }
+
+        review.setRating(request.getRating());
+        Review savedReview = reviewRepository.save(review);
+        return mapToResponse(savedReview);
+    }
+
+    @Transactional
+    public void deleteReview(Long reviewId) {
+        User user = getCurrentUser();
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new RuntimeException("Review not found"));
+
+        if (!review.getUser().getUsername().equals(user.getUsername())) {
+            throw new RuntimeException("Unauthorized: You can only delete your own reviews");
+        }
+
+        reviewRepository.delete(review);
+    }
+
     private ReviewResponse mapToResponse(Review review) {
         String fullName = review.getUser().getFirstName() + " " + review.getUser().getLastName();
         return new ReviewResponse(

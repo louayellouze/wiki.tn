@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
+import Link from 'next/link'
 import api from '@/common/utils/api'
 import { formatPrice } from '@/common/utils/format'
 
@@ -36,8 +37,29 @@ const SideSpecFilter: React.FC<SideSpecFilterProps> = ({
 }) => {
     const [specKeys, setSpecKeys] = useState<SpecKey[]>([]);
     const [specValues, setSpecValues] = useState<Record<string, string[]>>({});
+    const [categories, setCategories] = useState<any[]>([]);
+    const [currentCategory, setCurrentCategory] = useState<any>(null);
     const [showMore, setShowMore] = useState<Record<string, boolean>>({});
     const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                if (categoryId) {
+                    const res = await api.get(`/v1/categories/${categoryId}`);
+                    setCurrentCategory(res.data);
+                    setCategories(res.data.subCategories || []);
+                } else {
+                    const res = await api.get('/v1/categories/tree');
+                    setCategories(res.data);
+                    setCurrentCategory(null);
+                }
+            } catch (error) {
+                console.error('Failed to fetch categories', error);
+            }
+        };
+        fetchCategories();
+    }, [categoryId]);
 
     useEffect(() => {
         const fetchSpecKeys = async () => {
@@ -102,6 +124,52 @@ const SideSpecFilter: React.FC<SideSpecFilterProps> = ({
                     Filtrer
                 </button>
             </div>
+
+            {/* Category Navigation */}
+            <div className="mb-6">
+                <div className="font-semibold text-sm text-slate-800 mb-3 flex items-center justify-between">
+                    Catégories
+                    {currentCategory?.parentId && (
+                        <Link
+                            href={`/products?category=${currentCategory.parentId}`}
+                            className="text-[10px] text-wiki-btn hover:underline"
+                        >
+                            ← Retour
+                        </Link>
+                    )}
+                </div>
+
+                {currentCategory && (
+                    <div className="mb-3 p-2 bg-wiki-light/10 rounded-lg border border-wiki-light/20">
+                        <span className="text-xs font-bold text-wiki-dark truncate block">
+                            {currentCategory.name}
+                        </span>
+                    </div>
+                )}
+
+                <div className="space-y-1 max-h-48 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 pr-1">
+                    {categories.length > 0 ? (
+                        categories.map(cat => (
+                            <Link
+                                key={cat.id}
+                                href={`/products?category=${cat.id}`}
+                                className={`block py-1.5 px-3 rounded-lg text-sm transition-all ${Number(categoryId) === cat.id
+                                    ? 'bg-wiki text-white font-bold'
+                                    : 'text-slate-600 hover:bg-slate-100 hover:text-wiki'
+                                    }`}
+                            >
+                                {cat.name}
+                            </Link>
+                        ))
+                    ) : (
+                        <div className="text-[10px] text-slate-400 italic px-3">
+                            Dernier niveau de rayon
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            <div className="border-t border-slate-100 mb-6" />
 
             {/* Price Range */}
             <div className="mb-6">

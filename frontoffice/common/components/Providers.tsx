@@ -3,6 +3,7 @@
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import React from 'react';
 import { CartProvider } from '../context/CartContext';
+import { WishlistProvider } from '../context/WishlistContext';
 import { CartDrawer } from './layouts/CartDrawer';
 
 export default function Providers({ children }: { children: React.ReactNode }) {
@@ -11,10 +12,12 @@ export default function Providers({ children }: { children: React.ReactNode }) {
 
     return (
         <GoogleOAuthProvider clientId={googleClientId}>
-            <CartProvider>
-                {children}
-                <CartDrawer />
-            </CartProvider>
+            <WishlistProvider>
+                <CartProvider>
+                    {children}
+                    <CartDrawer />
+                </CartProvider>
+            </WishlistProvider>
         </GoogleOAuthProvider>
     );
 }

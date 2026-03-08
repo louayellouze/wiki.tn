@@ -9,7 +9,7 @@ import TopSeller from './TopSeller'
 import Features from './Features'
 import Testimoni from './Testimoni'
 import Partner from './Partner'
-import Blogs from './Blogs'
+import { BlogList } from '@/modules/blog/components/BlogList'
 import { getActiveBanners } from '@/common/services/heroBanner.service'
 import { HeroBanner } from '@/common/types/hero-banner'
 
@@ -67,7 +67,7 @@ const Homepage = () => {
             <Features />
             <Testimoni />
             <Partner />
-            <Blogs />
+            <BlogList title="Latest news" showViewAll limit={3} className="py-16 md:py-24 bg-white" />
         </>
     )
 }

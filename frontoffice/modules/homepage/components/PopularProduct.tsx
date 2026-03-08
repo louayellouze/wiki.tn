@@ -7,6 +7,7 @@ import React, { useState, useEffect } from 'react'
 import api from '@/common/utils/api'
 import { useCart } from '@/common/context/CartContext'
 import { formatPrice } from '@/common/utils/format'
+import ButtonLove from '@/common/components/elements/ButtonLove'
 
 interface Category {
     id: number;
@@ -135,7 +136,13 @@ const PopularProduct = () => {
                                         Sur Commande
                                     </div>
                                 )}
-                                <img className="flex m-auto max-h-32 md:max-h-40 object-contain p-2 md:p-4" src={getImageUrl(product)} alt={product.title} />
+                                <div className="relative h-40 md:h-52 mb-4 bg-slate-50 flex items-center justify-center overflow-hidden">
+                                    <img className="max-h-full max-w-full object-contain p-2 md:p-4 group-hover:scale-110 transition-transform duration-500" src={getImageUrl(product)} alt={product.title} />
+                                    <div className="absolute top-3 left-3 z-10 transition-opacity">
+                                        {/* @ts-ignore - Product type is slightly different here but compatible */}
+                                        <ButtonLove product={product as any} />
+                                    </div>
+                                </div>
                                 <div className="px-2 md:px-4 pb-3 md:pb-4 flex-col justify-start items-start gap-2 md:gap-4 flex mt-auto">
                                     <div className="text-wiki-btn text-sm md:text-lg lg:text-xl font-medium w-full truncate">{product.title}</div>
                                     <div className="text-slate-400 text-sm md:text-base font-medium">{formatPrice(product.regularPrice)}</div>

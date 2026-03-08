@@ -3,26 +3,28 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ProductService } from '@/common/services/productService'
-import { ProductResponse } from '@/app/dtos/product'
+import { ProductService, ProductSearchResult } from '@/common/services/productService'
+import { formatPrice } from '@/common/utils/format'
 
 const SearchSection = () => {
     const [query, setQuery] = useState('')
-    const [results, setResults] = useState<ProductResponse[]>([])
+    const [results, setResults] = useState<ProductSearchResult[]>([])
     const [isFocused, setIsFocused] = useState(false)
     const [loading, setLoading] = useState(false)
     const router = useRouter()
     const searchRef = useRef<HTMLDivElement>(null)
+    const abortRef = useRef<AbortController | null>(null)
 
-    // Debounce search
+    // Debounce search — triggers after 300ms from last keystroke, min 3 chars
     useEffect(() => {
+        if (query.trim().length < 3) {
+            setResults([])
+            return
+        }
+
         const timer = setTimeout(() => {
-            if (query.trim().length >= 3) {
-                performSearch()
-            } else {
-                setResults([])
-            }
-        }, 300)
+            performSearch(query.trim())
+        }, 250) // reduced from 300ms
 
         return () => clearTimeout(timer)
     }, [query])
@@ -38,13 +40,19 @@ const SearchSection = () => {
         return () => document.removeEventListener('mousedown', handleClickOutside)
     }, [])
 
-    const performSearch = async () => {
+    const performSearch = async (q: string) => {
+        // Cancel any in-flight request
+        if (abortRef.current) abortRef.current.abort()
+        abortRef.current = new AbortController()
+
         setLoading(true)
         try {
-            const data = await ProductService.searchProducts(query)
-            setResults(data.slice(0, 5)) // Show top 5
-        } catch (error) {
-            console.error('Search failed', error)
+            const data = await ProductService.searchProductsAutocomplete(q)
+            setResults(data)
+        } catch (error: any) {
+            if (error?.name !== 'CanceledError') {
+                console.error('Search failed', error)
+            }
         } finally {
             setLoading(false)
         }
@@ -52,19 +60,19 @@ const SearchSection = () => {
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault()
-        if (query.trim()) {
-            router.push(`/products?q=${encodeURIComponent(query.trim())}`)
+        const trimmedQuery = query.trim()
+        if (trimmedQuery) {
+            router.push(`/products?q=${encodeURIComponent(trimmedQuery)}`)
             setIsFocused(false)
         }
     }
 
-    const getImageUrl = (product: ProductResponse) => {
-        const url = product.imageUrl || (product.images && product.images.length > 0 ? product.images[0].imageUrl : null);
-        if (!url) return '/assets/img/2-1.png';
-        if (url.startsWith('http') || url.startsWith('data:')) return url;
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/api$/, '') || '';
-        return `${baseUrl}${url}`;
-    };
+    const getImageUrl = (imageUrl?: string) => {
+        if (!imageUrl) return '/assets/img/2-1.png'
+        if (imageUrl.startsWith('http') || imageUrl.startsWith('data:')) return imageUrl
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/api$/, '') || ''
+        return `${baseUrl}${imageUrl}`
+    }
 
     return (
         <div ref={searchRef} className="relative w-full z-[100]">
@@ -118,16 +126,16 @@ const SearchSection = () => {
                                         className="flex items-center gap-4 p-4 hover:bg-slate-50 transition-colors group border-b border-slate-50 last:border-0"
                                     >
                                         <div className="w-16 h-16 bg-white rounded-xl border border-slate-100 p-1 flex-shrink-0 flex items-center justify-center">
-                                            <img src={getImageUrl(product)} alt="" className="max-h-full max-w-full object-contain group-hover:scale-110 transition-transform" />
+                                            <img src={getImageUrl(product.imageUrl)} alt="" className="max-h-full max-w-full object-contain group-hover:scale-110 transition-transform" />
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <h4 className="text-slate-900 font-bold text-sm truncate group-hover:text-wiki transition-colors">
                                                 {product.title}
                                             </h4>
                                             <div className="flex items-center gap-2 mt-1">
-                                                <span className="text-wiki font-black text-sm">{product.discountPrice || product.regularPrice} DT</span>
-                                                {product.discountPrice && (
-                                                    <span className="text-slate-400 line-through text-[10px] font-medium">{product.regularPrice} DT</span>
+                                                <span className="text-wiki font-black text-sm">{formatPrice(product.discountPrice || product.regularPrice)}</span>
+                                                {(product.discountPrice ?? 0) > 0 && (
+                                                    <span className="text-slate-400 line-through text-[10px] font-medium">{formatPrice(product.regularPrice)}</span>
                                                 )}
                                                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ml-auto ${product.stockStatus === 'EN_STOCK' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
                                                     {product.stockStatus === 'EN_STOCK' ? 'En Stock' : product.stockStatus === 'EN_ARRIVAGE' ? 'En Arrivage' : 'Hors Stock'}
