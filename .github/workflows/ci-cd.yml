@@ -169,29 +169,38 @@ jobs:
       # ── Créer le fichier backend.env sur le serveur ───────────────────────────
       - name: Create backend.env on server
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          JWT_SECRET:           ${{ secrets.JWT_SECRET }}
+          MAIL_USERNAME:        ${{ secrets.MAIL_USERNAME }}
+          MAIL_PASSWORD:        ${{ secrets.MAIL_PASSWORD }}
+          OPENAI_API_KEY:       ${{ secrets.OPENAI_API_KEY }}
+          STRIPE_API_KEY:       ${{ secrets.STRIPE_API_KEY }}
+          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+          GOOGLE_CLIENT_ID:     ${{ secrets.GOOGLE_CLIENT_ID }}
         with:
           host:     ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           password: ${{ secrets.SERVER_PASSWORD }}
+          envs: JWT_SECRET,MAIL_USERNAME,MAIL_PASSWORD,OPENAI_API_KEY,STRIPE_API_KEY,STRIPE_WEBHOOK_SECRET,GOOGLE_CLIENT_ID
           script: |
             mkdir -p /home/louay/wiki
-            cat > /home/louay/wiki/backend.env << 'EOF'
-            SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/wikidb
-            SPRING_DATASOURCE_USERNAME=postgres
-            SPRING_DATASOURCE_PASSWORD=${{ secrets.DB_PASSWORD }}
-            JWT_SECRET=${{ secrets.JWT_SECRET }}
-            MAIL_USERNAME=${{ secrets.MAIL_USERNAME }}
-            MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }}
-            OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
-            OPENAI_API_URL=https://openrouter.ai/api/v1/chat/completions
-            STRIPE_API_KEY=${{ secrets.STRIPE_API_KEY }}
-            STRIPE_WEBHOOK_SECRET=${{ secrets.STRIPE_WEBHOOK_SECRET }}
-            APP_FRONTEND_URL=https://staging.wiki.tn
-            APP_CORS_ALLOWED_ORIGINS=https://staging.wiki.tn,https://dashboard.wiki.tn
-            GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
-            FILE_UPLOAD_DIR=/app/uploads
-            SERVER_PORT=8089
-            EOF
+            {
+              echo "SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/wikidb"
+              echo "SPRING_DATASOURCE_USERNAME=postgres"
+              echo "SPRING_DATASOURCE_PASSWORD=admin"
+              echo "JWT_SECRET=${JWT_SECRET}"
+              echo "MAIL_USERNAME=${MAIL_USERNAME}"
+              echo "MAIL_PASSWORD=${MAIL_PASSWORD}"
+              echo "OPENAI_API_KEY=${OPENAI_API_KEY}"
+              echo "OPENAI_API_URL=https://openrouter.ai/api/v1/chat/completions"
+              echo "STRIPE_API_KEY=${STRIPE_API_KEY}"
+              echo "STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}"
+              echo "APP_FRONTEND_URL=https://staging.wiki.tn"
+              echo "APP_CORS_ALLOWED_ORIGINS=https://staging.wiki.tn,https://dashboard.wiki.tn"
+              echo "GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}"
+              echo "FILE_UPLOAD_DIR=/app/uploads"
+              echo "SERVER_PORT=8089"
+            } > /home/louay/wiki/backend.env
 
       # ── Initialiser les certificats SSL (première fois uniquement) ────────────
       - name: Init SSL certificates (first deploy only)
