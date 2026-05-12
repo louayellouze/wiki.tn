@@ -1,0 +1,91 @@
+services:
+
+  # ─── Base de données ─────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: wiki-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: wikidb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "5432:5432"
+    networks:
+      - wiki-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d wikidb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── Backend Spring Boot ──────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: wiki-backend
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    environment:
+      # Surcharge : pointe vers le service postgres et non localhost
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/wikidb
+      FILE_UPLOAD_DIR: /app/uploads
+    volumes:
+      - uploads_data:/app/uploads
+    ports:
+      - "8089:8089"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - wiki-network
+
+  backoffice:
+    build:
+      context: ./backoffice
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8089/api
+    container_name: wiki-backoffice
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - wiki-network
+
+      
+
+  # ─── Front Office (Next.js 14) ────────────────────────────────────────────────
+  frontoffice:
+    build:
+      context: ./frontoffice
+      dockerfile: Dockerfile
+      args:
+        # NEXT_PUBLIC_* sont baked au build — doivent être l'URL accessible par le navigateur
+        NEXT_PUBLIC_API_URL: http://localhost:8089/api
+        NEXT_PUBLIC_GOOGLE_CLIENT_ID: 767179905177-detn60tjgq0kln9vs25c1jkml3l46h7b.apps.googleusercontent.com
+    container_name: wiki-frontoffice
+    restart: unless-stopped
+    ports:
+      - "3002:3000"
+    depends_on:
+      - backend
+    networks:
+      - wiki-network
+
+# ─── Volumes persistants ──────────────────────────────────────────────────────
+volumes:
+  postgres_data:
+  uploads_data:
+
+# ─── Réseau interne ───────────────────────────────────────────────────────────
+networks:
+  wiki-network:
+    driver: bridge

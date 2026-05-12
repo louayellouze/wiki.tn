@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\louay\\\\OneDrive\\\\Bureau\\\\test\\\\backend\" -Recurse -Directory)",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(Sort-Object)",
+      "Bash(git filter-branch --force --tree-filter ' *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(FILTER_BRANCH_SQUELCH_WARNING=1 git filter-branch --force --tree-filter ' *)",
+      "Bash(git stash *)"
+    ]
+  }
+}
