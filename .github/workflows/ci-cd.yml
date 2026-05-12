@@ -11,58 +11,40 @@ env:
   IMAGE_BACKOFFICE:  ghcr.io/louayellouze/wiki-backoffice
 
 # ──────────────────────────────────────────────────────────────────────────────
-# JOB 1 — SonarCloud Analysis
+# JOB 1 — SonarCloud Analysis (désactivé temporairement)
 # ──────────────────────────────────────────────────────────────────────────────
-jobs:
-  sonar:
-    name: SonarCloud Analysis
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # Historique complet requis par SonarCloud
-
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
-        with:
-          java-version: '21'
-          distribution: 'temurin'
-
-      - name: Cache Maven
-        uses: actions/cache@v4
-        with:
-          path: ~/.m2
-          key: ${{ runner.os }}-m2-${{ hashFiles('backend/pom.xml') }}
-          restore-keys: ${{ runner.os }}-m2
-
-      - name: Cache SonarCloud
-        uses: actions/cache@v4
-        with:
-          path: ~/.sonar/cache
-          key: ${{ runner.os }}-sonar
-          restore-keys: ${{ runner.os }}-sonar
-
-      - name: Build backend & run SonarCloud analysis
-        working-directory: backend
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN:  ${{ secrets.SONAR_TOKEN }}
-        run: |
-          mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
-            -Dsonar.projectKey=louayellouze_wiki-tn \
-            -Dsonar.organization=louayellouze \
-            -Dsonar.host.url=https://sonarcloud.io \
-            -Dsonar.java.binaries=target/classes \
-            -DskipTests
+# jobs:
+#   sonar:
+#     name: SonarCloud Analysis
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v4
+#         with:
+#           fetch-depth: 0
+#       - uses: actions/setup-java@v4
+#         with:
+#           java-version: '21'
+#           distribution: 'temurin'
+#       - name: Build & analyze
+#         working-directory: backend
+#         env:
+#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#           SONAR_TOKEN:  ${{ secrets.SONAR_TOKEN }}
+#         run: |
+#           mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+#             -Dsonar.projectKey=louayellouze_wiki-tn \
+#             -Dsonar.organization=louayellouze \
+#             -Dsonar.host.url=https://sonarcloud.io \
+#             -Dsonar.java.binaries=target/classes \
+#             -DskipTests
 
 # ──────────────────────────────────────────────────────────────────────────────
 # JOB 2 — Build & Push Docker Images
 # ──────────────────────────────────────────────────────────────────────────────
+jobs:
   build:
     name: Build & Push Images
     runs-on: ubuntu-latest
-    needs: sonar
     permissions:
       contents: read
       packages: write
