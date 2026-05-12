@@ -1,6 +1,36 @@
 services:
 
-  # ─── Base de données ─────────────────────────────────────────────────────────
+  # ─── Reverse Proxy ────────────────────────────────────────────────────────────
+  nginx:
+    image: nginx:alpine
+    container_name: wiki-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./certbot/conf:/etc/letsencrypt:ro
+      - ./certbot/www:/var/www/certbot:ro
+    depends_on:
+      - backend
+      - frontoffice
+      - backoffice
+    networks:
+      - wiki-network
+
+  # ─── SSL Auto-renouvellement (Let's Encrypt) ──────────────────────────────────
+  certbot:
+    image: certbot/certbot:latest
+    container_name: wiki-certbot
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew --quiet; sleep 12h & wait $${!}; done;'"
+    networks:
+      - wiki-network
+
+  # ─── Base de données ──────────────────────────────────────────────────────────
   postgres:
     image: postgres:16-alpine
     container_name: wiki-postgres
@@ -8,12 +38,10 @@ services:
     environment:
       POSTGRES_DB: wikidb
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: admin
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-admin}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./docker/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-    ports:
-      - "5432:5432"
     networks:
       - wiki-network
     healthcheck:
@@ -24,57 +52,48 @@ services:
 
   # ─── Backend Spring Boot ──────────────────────────────────────────────────────
   backend:
+    image: ghcr.io/louayellouze/wiki-backend:latest
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: wiki-backend
     restart: unless-stopped
     env_file:
-      - ./backend/.env
-    environment:
-      # Surcharge : pointe vers le service postgres et non localhost
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/wikidb
-      FILE_UPLOAD_DIR: /app/uploads
+      - ./backend.env
     volumes:
       - uploads_data:/app/uploads
-    ports:
-      - "8089:8089"
     depends_on:
       postgres:
         condition: service_healthy
     networks:
       - wiki-network
 
-  backoffice:
+  # ─── Front Office (Next.js 14) ────────────────────────────────────────────────
+  frontoffice:
+    image: ghcr.io/louayellouze/wiki-frontoffice:latest
     build:
-      context: ./backoffice
+      context: ./frontoffice
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: http://localhost:8089/api
-    container_name: wiki-backoffice
+        NEXT_PUBLIC_API_URL: https://staging.wiki.tn/api
+        NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+    container_name: wiki-frontoffice
     restart: unless-stopped
-    ports:
-      - "3000:3000"
     depends_on:
       - backend
     networks:
       - wiki-network
 
-      
-
-  # ─── Front Office (Next.js 14) ────────────────────────────────────────────────
-  frontoffice:
+  # ─── Back Office (Next.js) ────────────────────────────────────────────────────
+  backoffice:
+    image: ghcr.io/louayellouze/wiki-backoffice:latest
     build:
-      context: ./frontoffice
+      context: ./backoffice
       dockerfile: Dockerfile
       args:
-        # NEXT_PUBLIC_* sont baked au build — doivent être l'URL accessible par le navigateur
-        NEXT_PUBLIC_API_URL: http://localhost:8089/api
-        NEXT_PUBLIC_GOOGLE_CLIENT_ID: 767179905177-detn60tjgq0kln9vs25c1jkml3l46h7b.apps.googleusercontent.com
-    container_name: wiki-frontoffice
+        NEXT_PUBLIC_API_URL: https://staging.wiki.tn/api
+    container_name: wiki-backoffice
     restart: unless-stopped
-    ports:
-      - "3002:3000"
     depends_on:
       - backend
     networks:

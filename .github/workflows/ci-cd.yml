@@ -1,0 +1,282 @@
+name: CI/CD — Wiki.tn
+
+on:
+  push:
+    branches: [release]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_BACKEND:    ghcr.io/louayellouze/wiki-backend
+  IMAGE_FRONTOFFICE: ghcr.io/louayellouze/wiki-frontoffice
+  IMAGE_BACKOFFICE:  ghcr.io/louayellouze/wiki-backoffice
+
+# ──────────────────────────────────────────────────────────────────────────────
+# JOB 1 — SonarCloud Analysis
+# ──────────────────────────────────────────────────────────────────────────────
+jobs:
+  sonar:
+    name: SonarCloud Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Historique complet requis par SonarCloud
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Cache Maven
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('backend/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+
+      - name: Cache SonarCloud
+        uses: actions/cache@v4
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
+      - name: Build backend & run SonarCloud analysis
+        working-directory: backend
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN:  ${{ secrets.SONAR_TOKEN }}
+        run: |
+          mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+            -Dsonar.projectKey=louayellouze_wiki-tn \
+            -Dsonar.organization=louayellouze \
+            -Dsonar.host.url=https://sonarcloud.io \
+            -Dsonar.java.binaries=target/classes \
+            -DskipTests
+
+# ──────────────────────────────────────────────────────────────────────────────
+# JOB 2 — Build & Push Docker Images
+# ──────────────────────────────────────────────────────────────────────────────
+  build:
+    name: Build & Push Images
+    runs-on: ubuntu-latest
+    needs: sonar
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: louayellouze
+          password: ${{ secrets.REGISTRY_TOKEN }}
+
+      # ── Backend ──────────────────────────────────────────────────────────────
+      - name: Build & Push — Backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: ${{ env.IMAGE_BACKEND }}:latest
+          cache-from: type=gha,scope=backend
+          cache-to:   type=gha,scope=backend,mode=max
+
+      # ── Frontoffice ───────────────────────────────────────────────────────────
+      - name: Build & Push — Frontoffice
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontoffice
+          push: true
+          tags: ${{ env.IMAGE_FRONTOFFICE }}:latest
+          build-args: |
+            NEXT_PUBLIC_API_URL=https://staging.wiki.tn/api
+            NEXT_PUBLIC_GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
+          cache-from: type=gha,scope=frontoffice
+          cache-to:   type=gha,scope=frontoffice,mode=max
+
+      # ── Backoffice ────────────────────────────────────────────────────────────
+      - name: Build & Push — Backoffice
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backoffice
+          push: true
+          tags: ${{ env.IMAGE_BACKOFFICE }}:latest
+          build-args: |
+            NEXT_PUBLIC_API_URL=https://staging.wiki.tn/api
+          cache-from: type=gha,scope=backoffice
+          cache-to:   type=gha,scope=backoffice,mode=max
+
+# ──────────────────────────────────────────────────────────────────────────────
+# JOB 3 — Trivy Security Scan (3 images en parallèle)
+# ──────────────────────────────────────────────────────────────────────────────
+  trivy:
+    name: "Trivy Scan — ${{ matrix.service }}"
+    runs-on: ubuntu-latest
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: backend
+            image:   ghcr.io/louayellouze/wiki-backend:latest
+          - service: frontoffice
+            image:   ghcr.io/louayellouze/wiki-frontoffice:latest
+          - service: backoffice
+            image:   ghcr.io/louayellouze/wiki-backoffice:latest
+
+    steps:
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: louayellouze
+          password: ${{ secrets.REGISTRY_TOKEN }}
+
+      - name: Pull image
+        run: docker pull ${{ matrix.image }}
+
+      - name: Run Trivy — ${{ matrix.service }}
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref:  ${{ matrix.image }}
+          format:     table
+          exit-code:  '0'
+          severity:   CRITICAL,HIGH
+          output:     trivy-${{ matrix.service }}.txt
+
+      - name: Upload Trivy report
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-${{ matrix.service }}
+          path: trivy-${{ matrix.service }}.txt
+          retention-days: 14
+
+# ──────────────────────────────────────────────────────────────────────────────
+# JOB 4 — Deploy to Server
+# ──────────────────────────────────────────────────────────────────────────────
+  deploy:
+    name: Deploy to Server
+    runs-on: ubuntu-latest
+    needs: trivy
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # ── Copier les fichiers de déploiement sur le serveur ────────────────────
+      - name: Copy deployment files to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host:     ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          source:   "docker-compose.yml,docker/nginx/nginx.conf,docker/init.sql"
+          target:   /home/louay/wiki
+          strip_components: 0
+
+      # ── Créer le fichier backend.env sur le serveur ───────────────────────────
+      - name: Create backend.env on server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host:     ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          script: |
+            mkdir -p /home/louay/wiki
+            cat > /home/louay/wiki/backend.env << 'EOF'
+            SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/wikidb
+            SPRING_DATASOURCE_USERNAME=postgres
+            SPRING_DATASOURCE_PASSWORD=${{ secrets.DB_PASSWORD }}
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            MAIL_USERNAME=${{ secrets.MAIL_USERNAME }}
+            MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }}
+            OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+            OPENAI_API_URL=https://openrouter.ai/api/v1/chat/completions
+            STRIPE_API_KEY=${{ secrets.STRIPE_API_KEY }}
+            STRIPE_WEBHOOK_SECRET=${{ secrets.STRIPE_WEBHOOK_SECRET }}
+            APP_FRONTEND_URL=https://staging.wiki.tn
+            APP_CORS_ALLOWED_ORIGINS=https://staging.wiki.tn,https://dashboard.wiki.tn
+            GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
+            FILE_UPLOAD_DIR=/app/uploads
+            SERVER_PORT=8089
+            EOF
+
+      # ── Initialiser les certificats SSL (première fois uniquement) ────────────
+      - name: Init SSL certificates (first deploy only)
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host:     ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          script: |
+            CERT_PATH=/home/louay/wiki/certbot/conf/live/staging.wiki.tn/fullchain.pem
+
+            if [ ! -f "$CERT_PATH" ]; then
+              echo "=== Première installation : génération des certificats SSL ==="
+              mkdir -p /home/louay/wiki/certbot/conf
+              mkdir -p /home/louay/wiki/certbot/www
+
+              # Certificat auto-signé temporaire pour permettre à nginx de démarrer
+              mkdir -p /home/louay/wiki/certbot/conf/live/staging.wiki.tn
+              openssl req -x509 -nodes -days 1 -newkey rsa:2048 \
+                -keyout /home/louay/wiki/certbot/conf/live/staging.wiki.tn/privkey.pem \
+                -out    /home/louay/wiki/certbot/conf/live/staging.wiki.tn/fullchain.pem \
+                -subj "/CN=staging.wiki.tn" 2>/dev/null
+
+              # Fichiers SSL options requis par nginx
+              curl -s https://raw.githubusercontent.com/certbot/certbot/master/certbot-nginx/certbot_nginx/_internal/tls_configs/options-ssl-nginx.conf \
+                -o /home/louay/wiki/certbot/conf/options-ssl-nginx.conf
+              openssl dhparam -dsaparam -out /home/louay/wiki/certbot/conf/ssl-dhparams.pem 2048 2>/dev/null
+
+              echo "=== Démarrage du stack pour l'ACME challenge ==="
+              cd /home/louay/wiki
+              echo "${{ secrets.REGISTRY_TOKEN }}" | docker login ghcr.io -u louayellouze --password-stdin
+              docker compose pull
+              docker compose up -d
+
+              sleep 10
+
+              echo "=== Obtention du certificat Let's Encrypt ==="
+              docker compose run --rm certbot certonly --webroot \
+                --webroot-path=/var/www/certbot \
+                --email admin@wiki.tn --agree-tos --no-eff-email \
+                --force-renewal \
+                -d staging.wiki.tn -d dashboard.wiki.tn
+
+              docker compose restart nginx
+              echo "=== Certificat SSL installé avec succès ==="
+            else
+              echo "=== Certificats SSL déjà présents, skipping ==="
+            fi
+
+      # ── Déploiement final ─────────────────────────────────────────────────────
+      - name: Deploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host:     ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          script: |
+            cd /home/louay/wiki
+
+            echo "${{ secrets.REGISTRY_TOKEN }}" | docker login ghcr.io -u louayellouze --password-stdin
+
+            docker compose pull
+            docker compose up -d --remove-orphans
+            docker system prune -f --volumes
+
+            echo "=== Déploiement terminé ==="
+            echo "  - staging.wiki.tn    → Frontoffice"
+            echo "  - staging.wiki.tn/api → Backend API"
+            echo "  - dashboard.wiki.tn  → Backoffice"
+            docker compose ps
