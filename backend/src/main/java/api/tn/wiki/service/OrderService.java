@@ -277,14 +277,8 @@ public class OrderService {
             // Create or Update Payment record to SUCCESS
             paymentService.upsertPayment(savedOrder, transactionId, "SUCCESS");
 
-            // Log Historique
-            historiqueService.logAction(
-                    ActionType.UPDATE,
-                    EntityType.ORDER,
-                    "Paiement Stripe confirmé (Transaction: " + transactionId + "). Statut: AWAITING_PAYMENT → PAID",
-                    orderId,
-                    null // System action via webhook
-            );
+            // Log Historique — skippé car action système sans utilisateur (user_id NOT NULL)
+            System.out.println("Order #" + orderId + " => PAID via Stripe (tx: " + transactionId + ")");
 
             // Send confirmation email after payment
             emailService.sendPaymentConfirmationEmail(order);
