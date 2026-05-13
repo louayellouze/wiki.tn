@@ -200,6 +200,7 @@ jobs:
               echo "GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}"
               echo "FILE_UPLOAD_DIR=/app/uploads"
               echo "SERVER_PORT=8089"
+              echo "STRIPE_CURRENCY=eur"
             } > /home/louay/wiki/backend.env
 
       # ── Initialiser les certificats SSL (première fois uniquement) ────────────

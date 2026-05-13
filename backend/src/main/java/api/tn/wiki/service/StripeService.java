@@ -26,6 +26,9 @@ public class StripeService {
     @Value("${stripe.webhook.secret}")
     private String webhookSecret;
 
+    @Value("${stripe.currency:eur}")
+    private String currency;
+
     private final OrderService orderService;
     private final RepairQuoteService repairQuoteService;
 
@@ -50,8 +53,8 @@ public class StripeService {
                                 .setQuantity(1L)
                                 .setPriceData(
                                         SessionCreateParams.LineItem.PriceData.builder()
-                                                .setCurrency("tnd")
-                                                .setUnitAmount((long) (order.getTotalAmount() * 1000)) // TND is a 3-decimal currency (millimes)
+                                                .setCurrency(currency)
+                                                .setUnitAmount((long) (order.getTotalAmount() * 100))
                                                 .setProductData(
                                                         SessionCreateParams.LineItem.PriceData.ProductData.builder()
                                                                 .setName("Commande Wiki.tn #" + order.getId())
@@ -79,8 +82,8 @@ public class StripeService {
                                 .setQuantity(1L)
                                 .setPriceData(
                                         SessionCreateParams.LineItem.PriceData.builder()
-                                                .setCurrency("tnd")
-                                                .setUnitAmount((long) (quote.getTotalPrice() * 1000))
+                                                .setCurrency(currency)
+                                                .setUnitAmount((long) (quote.getTotalPrice() * 100))
                                                 .setProductData(
                                                         SessionCreateParams.LineItem.PriceData.ProductData.builder()
                                                                 .setName("Réparation Wiki.tn — Devis #" + quote.getId())
