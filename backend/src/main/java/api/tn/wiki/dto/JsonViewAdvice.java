@@ -35,13 +35,13 @@ public class JsonViewAdvice implements ResponseBodyAdvice<Object> {
                 SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
                         .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_WEBMASTER"));
 
-        // Do not wrap raw Strings or primitives to avoid ClassCastException with StringHttpMessageConverter
-        if (body instanceof String || body instanceof Number || body instanceof Boolean) {
+        // Ne pas wrapper les types non-sérialisables ou null (évite NPE dans Jackson)
+        if (body == null || body instanceof String || body instanceof Number || body instanceof Boolean || body instanceof byte[]) {
             return body;
         }
 
         // Wrap the body in MappingJacksonValue to set the view dynamically
-        org.springframework.http.converter.json.MappingJacksonValue mappingJacksonValue = 
+        org.springframework.http.converter.json.MappingJacksonValue mappingJacksonValue =
                 new org.springframework.http.converter.json.MappingJacksonValue(body);
 
         if (isAdmin) {

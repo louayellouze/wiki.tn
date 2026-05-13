@@ -81,14 +81,27 @@ public class ProductService {
 
     @Transactional(readOnly = true)
     public Page<ProductMinResponse> getAllProducts(Long categoryId, String stockStatus, Boolean isFlashSale, Pageable pageable) {
-        Specification<Product> spec = Specification.where(null);
+        Specification<Product> spec = (root, query, cb) -> {
+            if (!Long.class.equals(query.getResultType())) {
+                query.distinct(true);
+            }
+            return cb.conjunction();
+        };
 
         if (categoryId != null) {
             java.util.List<Long> categoryIds = new java.util.ArrayList<>();
             collectCategoryIdsRecursive(categoryId, categoryIds);
             spec = spec.and((root, query, cb) -> {
-                Join<Product, Category> categoryJoin = root.join("categories");
-                return categoryJoin.get("id").in(categoryIds);
+                if (!Long.class.equals(query.getResultType())) {
+                    Join<Product, Category> categoryJoin = root.join("categories");
+                    return categoryJoin.get("id").in(categoryIds);
+                }
+                // COUNT query: subquery pour éviter le JOIN
+                var sub = query.subquery(Integer.class);
+                var subRoot = sub.from(Product.class);
+                var subJoin = subRoot.join("categories");
+                sub.select(subRoot.get("id")).where(subJoin.get("id").in(categoryIds));
+                return root.get("id").in(sub);
             });
         }
 
@@ -174,7 +187,11 @@ public class ProductService {
     @Transactional(readOnly = true)
     public Page<ProductResponse> getFilteredProducts(String categorySlug, String brandSlug, Map<String, List<String>> filters, Double minPrice, Double maxPrice, Pageable pageable) {
         Specification<Product> spec = (root, query, cb) -> {
-            query.distinct(true);
+            // distinct uniquement sur la requête principale, PAS sur la COUNT query
+            // (COUNT(DISTINCT entity) avec JOIN cause des problèmes en Hibernate 6)
+            if (!Long.class.equals(query.getResultType())) {
+                query.distinct(true);
+            }
             return cb.conjunction();
         };
 
@@ -185,8 +202,17 @@ public class ProductService {
                  collectCategoryIdsRecursive(optCategory.get(), categoryIds);
                  logger.info("Filtering by category slug: '{}', found {} associated category IDs (including sub-categories): {}", categorySlug, categoryIds.size(), categoryIds);
                  spec = spec.and((root, query, cb) -> {
-                     Join<Product, Category> categoryJoin = root.join("categories");
-                     return categoryJoin.get("id").in(categoryIds);
+                     if (!Long.class.equals(query.getResultType())) {
+                         // Requête principale : JOIN pour filtrer + distinct
+                         Join<Product, Category> categoryJoin = root.join("categories");
+                         return categoryJoin.get("id").in(categoryIds);
+                     }
+                     // COUNT query : subquery pour éviter COUNT(DISTINCT entity) + JOIN
+                     var sub = query.subquery(Integer.class);
+                     var subRoot = sub.from(Product.class);
+                     var subJoin = subRoot.join("categories");
+                     sub.select(subRoot.get("id")).where(subJoin.get("id").in(categoryIds));
+                     return root.get("id").in(sub);
                  });
             } else {
                  // If slug not found, return false predicate
