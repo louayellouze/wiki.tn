@@ -265,6 +265,8 @@ jobs:
 
             docker compose pull
             docker compose up -d --remove-orphans
+            # Forcer le rechargement de nginx.conf (évite le problème d'inode avec bind mount)
+            docker compose restart nginx
             docker system prune -f --volumes
 
             echo "=== Déploiement terminé ==="
