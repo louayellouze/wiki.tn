@@ -14,6 +14,17 @@ public class StripeWebhookController {
         this.stripeService = stripeService;
     }
 
+    @PostMapping("/confirm-payment")
+    public ResponseEntity<String> confirmPayment(@RequestParam String sessionId) {
+        try {
+            stripeService.confirmPaymentBySessionId(sessionId);
+            return ResponseEntity.ok("Paiement confirmé");
+        } catch (Exception e) {
+            System.err.println("Erreur confirmation paiement: " + e.getMessage());
+            return ResponseEntity.status(400).body("Erreur: " + e.getMessage());
+        }
+    }
+
     @PostMapping("/webhook")
     public ResponseEntity<String> handleStripeWebhook(
             @RequestBody String payload,

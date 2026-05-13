@@ -46,7 +46,7 @@ public class StripeService {
         SessionCreateParams params = SessionCreateParams.builder()
                 .addPaymentMethodType(SessionCreateParams.PaymentMethodType.CARD)
                 .setMode(SessionCreateParams.Mode.PAYMENT)
-                .setSuccessUrl(frontendUrl + "/order-success?orderId=" + order.getId())
+                .setSuccessUrl(frontendUrl + "/order-success?orderId=" + order.getId() + "&session_id={CHECKOUT_SESSION_ID}")
                 .setCancelUrl(frontendUrl + "/checkout?order_cancel=true")
                 .addLineItem(
                         SessionCreateParams.LineItem.builder()
@@ -99,6 +99,26 @@ public class StripeService {
 
         Session session = Session.create(params);
         return session.getUrl();
+    }
+
+    public void confirmPaymentBySessionId(String sessionId) throws Exception {
+        Session session = Session.retrieve(sessionId);
+        if (session == null) throw new RuntimeException("Session Stripe introuvable");
+
+        String paymentStatus = session.getPaymentStatus();
+        String ref = session.getClientReferenceId();
+
+        System.out.println("Confirm payment: sessionId=" + sessionId + " paymentStatus=" + paymentStatus + " ref=" + ref);
+
+        if ("paid".equals(paymentStatus) && ref != null) {
+            if (ref.startsWith("REPAIR_")) {
+                Long quoteId = Long.parseLong(ref.substring(7));
+                repairQuoteService.markQuoteAsPaid(quoteId, sessionId);
+            } else {
+                Long orderId = Long.parseLong(ref);
+                orderService.markOrderAsPaid(orderId, sessionId);
+            }
+        }
     }
 
     public void handleWebhookEvent(String payload, String sigHeader) {

@@ -55,7 +55,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**", "/error").permitAll()
                         .requestMatchers("/api/v1/coupons/active").permitAll()
                         .requestMatchers("/api/v1/chat/**").permitAll()
-                        .requestMatchers("/api/v1/stripe/webhook").permitAll()
+                        .requestMatchers("/api/v1/stripe/webhook", "/api/v1/stripe/confirm-payment").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/products/**", "/api/v1/categories/**", "/api/v1/hero-banners/**", "/api/v1/spec-keys/**", "/api/v1/brands/**", "/api/v1/repair-items/**", "/api/v1/repair-items", "/uploads/**").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/repair-requests", "/api/v1/repair-requests/**").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.PATCH, "/api/v1/repair-quotes/*/respond").permitAll()

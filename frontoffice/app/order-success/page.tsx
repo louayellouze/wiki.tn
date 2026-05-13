@@ -12,20 +12,40 @@ import { formatPrice } from '@/common/utils/format';
 
 export default function OrderSuccessPage() {
     const searchParams = useSearchParams();
-    const orderId = searchParams.get('orderId');
-    
+    const orderId   = searchParams.get('orderId');
+    const sessionId = searchParams.get('session_id');
+
     const [orderDetails, setOrderDetails] = useState<any>(null);
     const [isLoadingOrder, setIsLoadingOrder] = useState(false);
 
     useEffect(() => {
-        if (orderId) {
+        if (!orderId) return;
+
+        const loadOrder = async () => {
             setIsLoadingOrder(true);
-            getOrderById(Number(orderId))
-                .then(data => setOrderDetails(data))
-                .catch(err => console.error("Failed to load order details", err))
-                .finally(() => setIsLoadingOrder(false));
-        }
-    }, [orderId]);
+            try {
+                // Si paiement Stripe : confirmer avec le backend avant de charger la commande
+                if (sessionId) {
+                    try {
+                        await fetch(
+                            `${process.env.NEXT_PUBLIC_API_URL}/v1/stripe/confirm-payment?sessionId=${sessionId}`,
+                            { method: 'POST' }
+                        );
+                    } catch (e) {
+                        console.warn('Stripe confirm-payment failed (non-blocking):', e);
+                    }
+                }
+                const data = await getOrderById(Number(orderId));
+                setOrderDetails(data);
+            } catch (err) {
+                console.error("Failed to load order details", err);
+            } finally {
+                setIsLoadingOrder(false);
+            }
+        };
+
+        loadOrder();
+    }, [orderId, sessionId]);
 
     return (
         <main className="bg-gradient-to-br from-slate-50 via-white to-emerald-50 min-h-screen">
