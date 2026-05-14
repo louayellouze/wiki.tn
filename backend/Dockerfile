@@ -17,13 +17,17 @@ WORKDIR /app
 # Utilisateur non-root pour la sécurité
 RUN addgroup -S spring && adduser -S spring -G spring
 
+# Créer le dossier uploads et lui donner les droits avant VOLUME
+# (VOLUME crée un point de montage vide appartenant à root sinon)
+RUN mkdir -p /app/uploads && chown spring:spring /app/uploads
+
 # Volume persistant pour les fichiers uploadés
 VOLUME /app/uploads
 
 # Copie du JAR depuis l'étape de build
 COPY --from=builder /app/target/wiki-0.0.1-SNAPSHOT.jar app.jar
 
-    RUN chown spring:spring         app.jar
+RUN chown spring:spring app.jar
 USER spring
 
 EXPOSE 8089
