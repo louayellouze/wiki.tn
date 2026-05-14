@@ -25,10 +25,10 @@ const UserMenu = () => {
 
     if (isLoggedIn) {
         return (
-            <div className="flex items-center gap-3 md:gap-4">
+            <div className="flex items-center gap-2 md:gap-4">
                 <Link
                     href="/profile"
-                    className="flex items-center gap-3 cursor-pointer group transition-all duration-300"
+                    className="flex items-center gap-2 md:gap-3 cursor-pointer group transition-all duration-300"
                     title="Mon profil"
                 >
                     <div className="relative">
@@ -37,7 +37,8 @@ const UserMenu = () => {
                             <User size={20} className="group-hover:animate-bounce-slow" />
                         </div>
                     </div>
-                    <div className="flex flex-col hidden md:flex">
+                    {/* Texte visible uniquement en desktop */}
+                    <div className="hidden md:flex flex-col">
                         <span className="text-white/60 text-[10px] font-bold uppercase tracking-widest leading-none">Bonjour</span>
                         <span className="text-white text-sm font-black truncate max-w-[100px] group-hover:text-wiki transition-colors">
                             {user ? `${user.firstName}` : 'Compte'}
@@ -48,7 +49,7 @@ const UserMenu = () => {
                 {(user?.role === 'ADMIN' || user?.role === 'WEBMASTER' || user?.role === 'INFOLINE') && (
                     <Link
                         href="/admin/contact-messages"
-                        className="flex items-center justify-center w-10 h-10 rounded-xl bg-white/5 hover:bg-white/20 text-white transition-all hover:scale-110 border border-white/5 group"
+                        className="hidden sm:flex items-center justify-center w-10 h-10 rounded-xl bg-white/5 hover:bg-white/20 text-white transition-all hover:scale-110 border border-white/5 group"
                         title="Messages Contact"
                     >
                         <Mail size={18} className="group-hover:rotate-12 transition-transform" />
@@ -60,11 +61,16 @@ const UserMenu = () => {
 
     return (
         <div className="flex justify-center items-center">
-            <Link href="/auth/login">
-                <button className="h-10 px-6 bg-white/[0.08] hover:bg-wiki text-white rounded-xl border border-white/10 hover:border-wiki transition-all duration-300 font-bold text-xs uppercase tracking-widest flex items-center gap-2 group overflow-hidden relative">
+            {/* Mobile : icône seule */}
+            <Link href="/auth/login" className="sm:hidden text-white p-2 hover:bg-white/10 rounded-xl transition-colors">
+                <User size={22} />
+            </Link>
+            {/* Desktop : bouton complet */}
+            <Link href="/auth/login" className="hidden sm:flex">
+                <button className="h-10 px-4 lg:px-6 bg-white/[0.08] hover:bg-wiki text-white rounded-xl border border-white/10 hover:border-wiki transition-all duration-300 font-bold text-xs uppercase tracking-widest flex items-center gap-2 group overflow-hidden relative">
                     <div className="absolute inset-0 bg-gradient-to-r from-wiki/0 via-white/10 to-wiki/0 -translate-x-full group-hover:animate-shimmer" />
                     <User size={16} className="group-hover:scale-125 transition-transform" />
-                    <span>Se connecter</span>
+                    <span className="hidden lg:inline">Se connecter</span>
                 </button>
             </Link>
         </div>

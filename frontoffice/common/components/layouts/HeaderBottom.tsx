@@ -6,7 +6,7 @@ import Link from 'next/link'
 import CartSection from '@/common/components/layouts/CartSection'
 import Navigation from '@/common/components/layouts/Navigation'
 import UserMenu from '@/common/components/layouts/UserMenu'
-import { Menu, X, User } from 'lucide-react'
+import { Menu, X } from 'lucide-react'
 
 const HeaderBottom = () => {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -52,14 +52,7 @@ const HeaderBottom = () => {
 
                     {/* User Menu and Cart */}
                     <div className="flex items-center gap-2 md:gap-4 lg:gap-6">
-                        <div className="hidden sm:block">
-                            <UserMenu />
-                        </div>
-                        <div className="sm:hidden">
-                            <Link href="/profile" className="text-white p-2 hover:bg-white/10 rounded-xl transition-colors block">
-                                <User size={24} />
-                            </Link>
-                        </div>
+                        <UserMenu />
                         <CartSection />
                     </div>
                 </div>

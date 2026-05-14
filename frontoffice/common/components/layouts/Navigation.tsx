@@ -218,7 +218,7 @@ const Navigation: React.FC<NavigationProps> = ({ mobileMenuOpen = false, setMobi
             </div>
 
             {/* Mobile Navigation Drawer */}
-            <div className={`lg:hidden fixed inset-0 z-40 transition-opacity duration-300 ${mobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
+            <div className={`lg:hidden fixed inset-0 z-[60] transition-opacity duration-300 ${mobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
                 {/* Backdrop */}
                 <div
                     className="absolute inset-0 bg-black bg-opacity-50"
