@@ -98,52 +98,52 @@ const Slider = ({ banners, loading }: SliderProps) => {
     return (
         <div className="relative group overflow-hidden py-8 md:py-12">
             <div className="container mx-auto px-4">
-                <div className="relative h-[500px] md:h-[600px] w-full overflow-hidden rounded-[3rem] bg-slate-900 shadow-2xl shadow-slate-200">
+                <div className="relative h-[420px] md:h-[580px] w-full overflow-hidden rounded-2xl md:rounded-[3rem] bg-slate-900 shadow-2xl shadow-slate-200">
                     {/* Background Layer with Gradient & Animation */}
                     <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-emerald-950 to-slate-900 opacity-90" />
                     <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20" />
-                    
+
                     {/* Animated Glow Circles */}
                     <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-emerald-500/20 blur-[120px] rounded-full animate-pulse" />
                     <div className="absolute bottom-[-10%] left-[-10%] w-[400px] h-[400px] bg-blue-500/10 blur-[100px] rounded-full animate-pulse delay-700" />
 
-                    <div className="relative h-full flex flex-col md:flex-row items-center px-8 md:px-20 gap-12">
+                    <div className="relative h-full flex flex-col md:flex-row items-center px-6 md:px-20 gap-4 md:gap-12">
                         {/* Text Content */}
-                        <div className="flex-1 z-10 text-center md:text-left mt-12 md:mt-0">
-                            <div className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 px-4 py-1.5 rounded-full mb-6 animate-fade-in-up">
+                        <div className="flex-none md:flex-1 z-10 text-center md:text-left pt-6 md:pt-0">
+                            <div className="hidden md:inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 px-4 py-1.5 rounded-full mb-4 animate-fade-in-up">
                                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
                                 <span className="text-emerald-400 text-xs font-bold uppercase tracking-widest">Offre Exclusive</span>
                             </div>
-                            
-                            <h1 
+
+                            <h1
                                 key={`title-${currentIndex}`}
-                                className="text-white text-3xl md:text-5xl lg:text-6xl font-black leading-tight mb-6 animate-fade-in-up drop-shadow-2xl"
+                                className="text-white text-2xl md:text-5xl lg:text-6xl font-black leading-tight mb-3 md:mb-6 animate-fade-in-up drop-shadow-2xl"
                                 style={{ animationDelay: '100ms' }}
                                 dangerouslySetInnerHTML={{ __html: banner.title }}
                             />
-                            
-                            <p 
+
+                            <p
                                 key={`desc-${currentIndex}`}
-                                className="text-slate-400 text-lg md:text-xl max-w-xl mb-10 line-clamp-2 animate-fade-in-up"
+                                className="hidden md:block text-slate-400 text-lg md:text-xl max-w-xl mb-8 line-clamp-2 animate-fade-in-up"
                                 style={{ animationDelay: '200ms' }}
                             >
                                 {banner.description}
                             </p>
 
-                            <div className="flex flex-wrap items-center justify-center md:justify-start gap-6 animate-fade-in-up" style={{ animationDelay: '300ms' }}>
+                            <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 animate-fade-in-up" style={{ animationDelay: '300ms' }}>
                                 <button
                                     onClick={() => handleClick(banner.linkUrl)}
-                                    className="group/btn relative bg-wiki-btn hover:bg-white text-white hover:text-wiki-btn px-10 py-5 rounded-2xl font-black text-sm uppercase tracking-widest transition-all duration-500 flex items-center gap-3 overflow-hidden shadow-xl shadow-wiki-btn/20"
+                                    className="group/btn relative bg-wiki-btn hover:bg-white text-white hover:text-wiki-btn px-6 py-3 md:px-10 md:py-5 rounded-xl md:rounded-2xl font-black text-xs md:text-sm uppercase tracking-widest transition-all duration-500 flex items-center gap-2 md:gap-3 overflow-hidden shadow-xl shadow-wiki-btn/20"
                                 >
                                     <span className="relative z-10">{banner.buttonText || 'Découvrir'}</span>
-                                    <ArrowRight className="w-5 h-5 relative z-10 group-hover/btn:translate-x-1 transition-transform" />
+                                    <ArrowRight className="w-4 h-4 md:w-5 md:h-5 relative z-10 group-hover/btn:translate-x-1 transition-transform" />
                                     <div className="absolute inset-0 bg-white translate-y-full group-hover/btn:translate-y-0 transition-transform duration-500" />
                                 </button>
                             </div>
                         </div>
 
                         {/* Image Content */}
-                        <div className="flex-1 relative h-[300px] md:h-full flex items-center justify-center p-8 md:p-0">
+                        <div className="flex-1 relative h-[200px] md:h-full flex items-center justify-center p-4 md:p-0">
                             {/* Product Stage (Professional Display) */}
                             <div className="absolute inset-x-4 inset-y-10 md:inset-x-10 md:inset-y-20 bg-white rounded-[3rem] shadow-[0_20px_50px_rgba(0,0,0,0.3)] animate-fade-in-up overflow-hidden">
                                 <div className="absolute inset-0 bg-gradient-to-br from-slate-50 to-white opacity-50" />
@@ -209,29 +209,29 @@ const Slider = ({ banners, loading }: SliderProps) => {
                     </div>
 
                     {/* Navigation UI */}
-                    <div className="absolute bottom-10 left-0 right-0 z-20 flex items-center justify-between px-10 md:px-20">
-                        <div className="flex items-center gap-3">
+                    <div className="absolute bottom-4 md:bottom-10 left-0 right-0 z-20 flex items-center justify-between px-6 md:px-20">
+                        <div className="flex items-center gap-2">
                             {banners.map((_, index) => (
                                 <button
                                     key={index}
                                     onClick={() => setCurrentIndex(index)}
-                                    className={`h-1.5 rounded-full transition-all duration-500 ${index === currentIndex ? 'w-12 bg-wiki-btn' : 'w-4 bg-slate-700 hover:bg-slate-600'}`}
+                                    className={`h-1.5 rounded-full transition-all duration-500 ${index === currentIndex ? 'w-8 md:w-12 bg-wiki-btn' : 'w-3 md:w-4 bg-slate-700 hover:bg-slate-600'}`}
                                 />
                             ))}
                         </div>
-                        
-                        <div className="flex gap-4">
-                            <button 
+
+                        <div className="flex gap-2 md:gap-4">
+                            <button
                                 onClick={handlePrev}
-                                className="w-14 h-14 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-white transition-all active:scale-95"
+                                className="w-9 h-9 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-white transition-all active:scale-95"
                             >
-                                <ChevronLeft className="w-6 h-6" />
+                                <ChevronLeft className="w-4 h-4 md:w-6 md:h-6" />
                             </button>
-                            <button 
+                            <button
                                 onClick={handleNext}
-                                className="w-14 h-14 rounded-2xl bg-wiki-btn hover:bg-emerald-900 border border-wiki-btn/20 flex items-center justify-center text-white transition-all active:scale-95 shadow-lg shadow-wiki-btn/20"
+                                className="w-9 h-9 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-wiki-btn hover:bg-emerald-900 border border-wiki-btn/20 flex items-center justify-center text-white transition-all active:scale-95 shadow-lg shadow-wiki-btn/20"
                             >
-                                <ChevronRight className="w-6 h-6" />
+                                <ChevronRight className="w-4 h-4 md:w-6 md:h-6" />
                             </button>
                         </div>
                     </div>

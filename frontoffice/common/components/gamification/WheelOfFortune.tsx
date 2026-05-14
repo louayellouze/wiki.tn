@@ -209,18 +209,18 @@ export default function WheelOfFortune() {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-8 left-8 z-[999] group flex items-center gap-4 bg-[#059669] text-white p-2 pr-6 rounded-full shadow-[0_20px_50px_rgba(5,150,105,0.3)] hover:scale-110 transition-all duration-500 animate-bounce"
+          className="fixed bottom-4 left-4 md:bottom-8 md:left-8 z-[99] group flex items-center gap-3 bg-[#059669] text-white p-1.5 pr-4 md:p-2 md:pr-6 rounded-full shadow-[0_20px_50px_rgba(5,150,105,0.3)] hover:scale-110 transition-all duration-500 animate-bounce"
         >
-          <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
-            <Gift className="w-6 h-6 animate-pulse" />
+          <div className="w-9 h-9 md:w-12 md:h-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+            <Gift className="w-5 h-5 md:w-6 md:h-6 animate-pulse" />
           </div>
-          <span className="font-bold text-sm tracking-tight">Cadeau surprise !</span>
+          <span className="font-bold text-xs md:text-sm tracking-tight">Cadeau surprise !</span>
         </button>
       )}
 
       {isOpen && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md animate-in fade-in duration-500">
-          <div className="relative w-full max-w-lg bg-[#0f172a] rounded-[3.5rem] p-10 shadow-[0_0_100px_rgba(16,185,129,0.1)] border border-slate-800 text-center">
+          <div className="relative w-full max-w-lg bg-[#0f172a] rounded-[2rem] md:rounded-[3.5rem] p-6 md:p-10 shadow-[0_0_100px_rgba(16,185,129,0.1)] border border-slate-800 text-center overflow-y-auto max-h-[95vh]">
             <button 
               onClick={() => setIsOpen(false)}
               className="absolute top-8 right-8 p-3 hover:bg-slate-800 rounded-2xl transition-all group"
@@ -228,17 +228,17 @@ export default function WheelOfFortune() {
               <X size={24} className="text-slate-500 group-hover:text-white group-hover:rotate-90 transition-all duration-300" />
             </button>
 
-            <div className="mb-8">
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-[10px] font-black uppercase tracking-[0.2em] mb-4">
+            <div className="mb-4 md:mb-8">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-[10px] font-black uppercase tracking-[0.2em] mb-3">
                 <Sparkles size={12} /> Wiki Gamification
               </div>
-              <h2 className="text-4xl font-black text-white mb-2 tracking-tight italic uppercase">Roue de la chance</h2>
-              <p className="text-slate-400 font-medium max-w-[280px] mx-auto text-sm leading-relaxed">
+              <h2 className="text-2xl md:text-4xl font-black text-white mb-2 tracking-tight italic uppercase">Roue de la chance</h2>
+              <p className="hidden md:block text-slate-400 font-medium max-w-[280px] mx-auto text-sm leading-relaxed">
                 Tentez de remporter un coupon de réduction exclusif Wiki.tn !
               </p>
             </div>
 
-            <div className="relative w-[320px] h-[320px] mx-auto mb-10">
+            <div className="relative w-[240px] h-[240px] md:w-[320px] md:h-[320px] mx-auto mb-6 md:mb-10">
               <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2 z-20">
                 <div className="w-6 h-8 bg-emerald-500 rounded-b-xl shadow-[0_5px_15px_rgba(16,185,129,0.4)]" />
               </div>
@@ -302,7 +302,7 @@ export default function WheelOfFortune() {
               <button
                 onClick={spin}
                 disabled={isSpinning}
-                className="w-full h-20 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xl rounded-[2rem] shadow-[0_20px_40px_rgba(5,150,105,0.2)] transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-4 group"
+                className="w-full h-14 md:h-20 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-base md:text-xl rounded-2xl md:rounded-[2rem] shadow-[0_20px_40px_rgba(5,150,105,0.2)] transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3 md:gap-4 group"
               >
                 {isSpinning ? (
                    <div className="flex gap-2">
