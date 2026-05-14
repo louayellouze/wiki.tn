@@ -684,9 +684,9 @@ const ProfilePage = () => {
                                 </form>
                             </Card>
                         ) : showOrders ? (
-                            <Card className="p-8 md:p-10 shadow-xl border-none bg-white rounded-[2rem]">
-                                <div className="flex justify-between items-center mb-10 pb-6 border-b border-gray-100">
-                                    <h1 className="text-3xl font-black text-gray-900 tracking-tight flex items-center gap-4">
+                            <Card className="p-5 md:p-10 shadow-xl border-none bg-white rounded-[2rem]">
+                                <div className="flex flex-wrap justify-between items-center gap-3 mb-8 pb-6 border-b border-gray-100">
+                                    <h1 className="text-xl md:text-3xl font-black text-gray-900 tracking-tight flex items-center gap-3">
                                         Historique <span className="text-wiki-btn">des commandes</span>
                                         <button 
                                             onClick={fetchOrders} 
@@ -718,48 +718,43 @@ const ProfilePage = () => {
                                 ) : (
                                     <div className="space-y-6">
                                         {orders.map((order: any, index: number) => (
-                                            <div key={order.id || index} className="border border-gray-100 rounded-3xl p-6 hover:bg-slate-50 transition-all group">
-                                                <div className="flex flex-col md:flex-row justify-between gap-4 mb-4">
+                                            <div key={order.id || index} className="border border-gray-100 rounded-2xl md:rounded-3xl p-4 md:p-6 hover:bg-slate-50 transition-all group">
+                                                <div className="flex flex-wrap justify-between gap-3 mb-4">
                                                     <div>
                                                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Commande #{order.id}</p>
-                                                        <p className="text-lg font-bold text-gray-800">{new Date(order.orderDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                                                        <p className="text-sm md:text-lg font-bold text-gray-800">{new Date(order.orderDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
                                                     </div>
-                                                    <div className="flex items-center gap-4">
-                                                        <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${getOrderStatusLabel(order.status).color}`}>
+                                                    <div className="flex flex-wrap items-center gap-2 md:gap-4">
+                                                        <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${getOrderStatusLabel(order.status).color}`}>
                                                             {getOrderStatusLabel(order.status).label}
                                                         </div>
                                                         <div className="text-right">
-                                                            <p className="text-xl font-black text-wiki-btn">{formatPrice(order.totalAmount)}</p>
-                                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
-                                                                {order.paymentMethod === 'CASH_ON_DELIVERY' ? 'Espèces à la livraison' :
+                                                            <p className="text-lg md:text-xl font-black text-wiki-btn">{formatPrice(order.totalAmount)}</p>
+                                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter hidden sm:block">
+                                                                {order.paymentMethod === 'CASH_ON_DELIVERY' ? 'Espèces livraison' :
                                                                     order.paymentMethod === 'CARD' ? 'Carte Bancaire' :
                                                                         order.paymentMethod || 'Non spécifié'}
                                                             </p>
                                                         </div>
                                                     </div>
                                                 </div>
-                                                <div className="mt-6 border-t border-gray-100 pt-4">
+                                                <div className="mt-4 border-t border-gray-100 pt-4">
                                                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Articles commandés</p>
-                                                    <div className="space-y-3">
+                                                    <div className="space-y-2">
                                                         {order.items.map((item: any, idx: number) => (
-                                                            <div key={item.id || idx} className="flex items-center justify-between bg-white p-4 rounded-2xl border border-gray-100 transition-all hover:shadow-lg hover:shadow-gray-200/50 hover:border-wiki-btn/30 group/item">
-                                                                <div className="flex items-center gap-5">
-                                                                    <div className="shrink-0 w-20 h-20 bg-white rounded-xl shadow-sm flex items-center justify-center p-2 border border-gray-100 group-hover/item:scale-105 transition-transform duration-300">
+                                                            <div key={item.id || idx} className="flex items-center justify-between bg-white p-3 md:p-4 rounded-xl border border-gray-100 transition-all hover:shadow-lg hover:shadow-gray-200/50 hover:border-wiki-btn/30 group/item gap-2">
+                                                                <div className="flex items-center gap-3 min-w-0">
+                                                                    <div className="shrink-0 w-14 h-14 md:w-20 md:h-20 bg-white rounded-xl shadow-sm flex items-center justify-center p-1 md:p-2 border border-gray-100">
                                                                         <Image src={item.productImageUrl || '/assets/img/logo.png'} className="max-h-full object-contain" alt={item.productTitle} width={80} height={80} />
                                                                     </div>
-                                                                    <div className="space-y-1">
-                                                                        <p className="text-sm font-black text-gray-900 line-clamp-2 leading-snug max-w-[200px] md:max-w-md">{item.productTitle}</p>
-                                                                        <div className="flex items-center gap-2">
-                                                                            <span className="px-2 py-0.5 bg-gray-100 text-[10px] font-black text-gray-400 rounded-md uppercase tracking-wider">REF: {item.id}</span>
-                                                                            <p className="text-xs text-slate-500 font-bold">PU: <span className="text-gray-700">{formatPrice(item.price)}</span></p>
-                                                                        </div>
+                                                                    <div className="space-y-1 min-w-0">
+                                                                        <p className="text-xs md:text-sm font-black text-gray-900 line-clamp-2 leading-snug">{item.productTitle}</p>
+                                                                        <p className="text-[10px] text-slate-500 font-bold hidden sm:block">PU: <span className="text-gray-700">{formatPrice(item.price)}</span></p>
                                                                     </div>
                                                                 </div>
-                                                                <div className="text-right pl-4 border-l border-gray-100 min-w-[100px]">
-                                                                    <div className="flex flex-col h-full justify-between py-1">
-                                                                        <p className="text-sm font-black text-slate-400 group-hover/item:text-wiki-btn transition-colors italic">Qté: {item.quantity}</p>
-                                                                        <p className="text-lg font-black text-wiki-btn tracking-tight">{formatPrice(item.price * item.quantity)}</p>
-                                                                    </div>
+                                                                <div className="text-right shrink-0 pl-2 border-l border-gray-100">
+                                                                    <p className="text-xs font-black text-slate-400 italic">×{item.quantity}</p>
+                                                                    <p className="text-sm md:text-lg font-black text-wiki-btn">{formatPrice(item.price * item.quantity)}</p>
                                                                 </div>
                                                             </div>
                                                         ))}
@@ -771,9 +766,9 @@ const ProfilePage = () => {
                                 )}
                             </Card>
                         ) : showRepairs ? (
-                            <Card className="p-8 md:p-10 shadow-xl border-none bg-white rounded-[2rem]">
-                                <div className="flex justify-between items-center mb-10 pb-6 border-b border-gray-100">
-                                    <h1 className="text-3xl font-black text-gray-900 tracking-tight flex items-center gap-4">
+                            <Card className="p-5 md:p-10 shadow-xl border-none bg-white rounded-[2rem]">
+                                <div className="flex flex-wrap justify-between items-center gap-3 mb-8 pb-6 border-b border-gray-100">
+                                    <h1 className="text-xl md:text-3xl font-black text-gray-900 tracking-tight flex items-center gap-3">
                                         Mes <span className="text-wiki-btn">Réparations</span>
                                         <button 
                                             onClick={fetchRepairs} 
@@ -806,23 +801,25 @@ const ProfilePage = () => {
                                 ) : (
                                     <div className="space-y-6">
                                         {repairs.map((repair: RepairRequest, index: number) => (
-                                            <div key={repair.id || index} className="border border-gray-100 rounded-3xl p-6 hover:bg-slate-50 transition-all group">
-                                                <div className="flex flex-col md:flex-row justify-between gap-4 mb-4">
-                                                    <div>
-                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Demande #{repair.id}</p>
-                                                        <h4 className="text-lg font-bold text-gray-800">{repair.subject}</h4>
-                                                        <p className="text-sm text-gray-500">{repair.deviceType} {repair.brand} {repair.model}</p>
-                                                    </div>
-                                                    <div className="flex items-center gap-4">
-                                                        <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${getRepairStatusLabel(repair.status || 'PENDING').color}`}>
-                                                            {getRepairStatusLabel(repair.status || 'PENDING').label}
+                                            <div key={repair.id || index} className="border border-gray-100 rounded-2xl md:rounded-3xl p-4 md:p-6 hover:bg-slate-50 transition-all group">
+                                                <div className="flex flex-col gap-3 mb-4">
+                                                    <div className="flex flex-wrap justify-between items-start gap-2">
+                                                        <div>
+                                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Demande #{repair.id}</p>
+                                                            <h4 className="text-sm md:text-lg font-bold text-gray-800">{repair.subject}</h4>
+                                                            <p className="text-xs md:text-sm text-gray-500">{repair.deviceType} {repair.brand} {repair.model}</p>
                                                         </div>
-                                                        <button
-                                                            onClick={() => handleViewQuote(repair.id!)}
-                                                            className="flex items-center gap-2 px-4 py-2 bg-wiki-btn/10 hover:bg-wiki-btn text-wiki-btn hover:text-white rounded-xl text-sm font-bold transition-all border border-wiki-btn/20"
-                                                        >
-                                                            <FileText className="w-4 h-4" /> Devis
-                                                        </button>
+                                                        <div className="flex flex-wrap items-center gap-2">
+                                                            <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${getRepairStatusLabel(repair.status || 'PENDING').color}`}>
+                                                                {getRepairStatusLabel(repair.status || 'PENDING').label}
+                                                            </div>
+                                                            <button
+                                                                onClick={() => handleViewQuote(repair.id!)}
+                                                                className="flex items-center gap-1.5 px-3 py-1.5 bg-wiki-btn/10 hover:bg-wiki-btn text-wiki-btn hover:text-white rounded-xl text-xs md:text-sm font-bold transition-all border border-wiki-btn/20"
+                                                            >
+                                                                <FileText className="w-3.5 h-3.5" /> Devis
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 </div>
                                                 <div className="text-sm text-gray-600 bg-white p-4 rounded-xl border border-gray-100 italic">
@@ -837,9 +834,9 @@ const ProfilePage = () => {
                                 )}
                             </Card>
                         ) : showClaims ? (
-                            <Card className="p-8 md:p-10 shadow-xl border-none bg-white rounded-[2rem]">
-                                <div className="flex justify-between items-center mb-10 pb-6 border-b border-gray-100">
-                                    <h1 className="text-3xl font-black text-gray-900 tracking-tight flex items-center gap-4">
+                            <Card className="p-5 md:p-10 shadow-xl border-none bg-white rounded-[2rem]">
+                                <div className="flex flex-wrap justify-between items-center gap-3 mb-8 pb-6 border-b border-gray-100">
+                                    <h1 className="text-xl md:text-3xl font-black text-gray-900 tracking-tight flex items-center gap-3">
                                         Mes <span className="text-wiki-btn">Réclamations</span>
                                         <button 
                                             onClick={fetchClaims} 
@@ -1035,11 +1032,11 @@ const ProfilePage = () => {
 
             {/* Quote Modal */}
             {selectedRepairQuote && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4 backdrop-blur-md animate-in fade-in duration-300">
-                    <div className="bg-white w-full max-w-2xl rounded-3xl overflow-hidden shadow-2xl scale-in-center">
-                        <div className="p-8 border-b border-gray-100 flex justify-between items-center bg-slate-50/50">
+                <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/80 p-0 sm:p-4 backdrop-blur-md animate-in fade-in duration-300">
+                    <div className="bg-white w-full max-w-2xl rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl scale-in-center">
+                        <div className="p-5 md:p-8 border-b border-gray-100 flex justify-between items-center bg-slate-50/50">
                             <div>
-                                <h3 className="text-2xl font-black text-gray-900 tracking-tight">Détails <span className="text-wiki-btn">du Devis</span></h3>
+                                <h3 className="text-lg md:text-2xl font-black text-gray-900 tracking-tight">Détails <span className="text-wiki-btn">du Devis</span></h3>
                                 <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">Référence: #{selectedRepairQuote.id}</p>
                             </div>
                             <button
@@ -1050,7 +1047,7 @@ const ProfilePage = () => {
                             </button>
                         </div>
 
-                        <div className="p-8 max-h-[70vh] overflow-y-auto">
+                        <div className="p-5 md:p-8 max-h-[75vh] overflow-y-auto">
                             <div className="space-y-6">
                                 {/* Quote Lines */}
                                 <div className="space-y-3">
@@ -1083,18 +1080,18 @@ const ProfilePage = () => {
 
                                 {/* Actions */}
                                 {selectedRepairQuote.status === 'SENT' && (
-                                    <div className="grid grid-cols-2 gap-4 pt-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4">
                                         <button
                                             onClick={() => handleRespondToQuote(selectedRepairQuote.id, 'ACCEPTED')}
                                             disabled={isRespondingToQuote}
-                                            className="bg-wiki-btn hover:bg-emerald-800 text-white font-black py-4 rounded-2xl shadow-xl shadow-wiki-btn/20 transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
+                                            className="bg-wiki-btn hover:bg-emerald-800 text-white font-black py-3 md:py-4 rounded-2xl shadow-xl shadow-wiki-btn/20 transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 text-sm md:text-base"
                                         >
                                             <CheckCircle className="w-5 h-5" /> Accepter le devis
                                         </button>
                                         <button
                                             onClick={() => handleRespondToQuote(selectedRepairQuote.id, 'REJECTED')}
                                             disabled={isRespondingToQuote}
-                                            className="bg-red-50 hover:bg-red-100 text-red-600 font-black py-4 rounded-2xl transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
+                                            className="bg-red-50 hover:bg-red-100 text-red-600 font-black py-3 md:py-4 rounded-2xl transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50 text-sm md:text-base"
                                         >
                                             <XCircle className="w-5 h-5" /> Refuser
                                         </button>
