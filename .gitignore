@@ -1,5 +1,8 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
+# Fichiers de config locaux avec secrets — ne jamais commiter
+backend/src/main/resources/application-local.properties
+
 # dependencies
 */**/node_modules
 /.pnp

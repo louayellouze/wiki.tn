@@ -83,13 +83,8 @@ public class HistoriqueService {
 
     private HistoriqueResponse convertToResponse(Historique historique) {
         User user = historique.getUser();
-
-        // @NotFound(IGNORE) renvoie null si l'utilisateur a été supprimé
-        Integer userId  = user != null ? user.getId()       : null;
-        String username = user != null ? user.getUsername()  : "système";
-        String fullName = user != null ? user.getFirstName() + " " + user.getLastName() : "Utilisateur supprimé";
-        Role   role     = user != null ? user.getRole()      : null;
-
+        String fullName = user.getFirstName() + " " + user.getLastName();
+        
         return new HistoriqueResponse(
             historique.getId(),
             historique.getActionType(),
@@ -97,10 +92,10 @@ public class HistoriqueService {
             historique.getDetails(),
             historique.getEntityId(),
             historique.getActionDate(),
-            userId,
-            username,
+            user.getId(),
+            user.getUsername(),
             fullName,
-            role
+            user.getRole()
         );
     }
 }
