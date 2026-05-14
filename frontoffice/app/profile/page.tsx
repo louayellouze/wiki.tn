@@ -758,7 +758,7 @@ const ProfilePage = () => {
                                                             <div key={item.id || idx} className="flex items-center justify-between bg-white p-3 md:p-4 rounded-xl border border-gray-100 transition-all hover:shadow-lg hover:shadow-gray-200/50 hover:border-wiki-btn/30 group/item gap-2">
                                                                 <div className="flex items-center gap-3 min-w-0">
                                                                     <div className="shrink-0 w-14 h-14 md:w-20 md:h-20 bg-white rounded-xl shadow-sm flex items-center justify-center p-1 md:p-2 border border-gray-100">
-                                                                        <Image src={item.productImageUrl || '/assets/img/logo.png'} className="max-h-full object-contain" alt={item.productTitle} width={80} height={80} />
+                                                                        <Image src={item.imageUrl || item.productImageUrl || '/assets/img/logo.png'} className="max-h-full object-contain" alt={item.productTitle || 'Produit'} width={80} height={80} />
                                                                     </div>
                                                                     <div className="space-y-1 min-w-0">
                                                                         <p className="text-xs md:text-sm font-black text-gray-900 line-clamp-2 leading-snug">{item.productTitle}</p>

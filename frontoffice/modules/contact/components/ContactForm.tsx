@@ -14,28 +14,28 @@ const ContactForm = () => {
         subject: '',
         message: ''
     });
-
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
     const [errorMessage, setErrorMessage] = useState('');
 
     useEffect(() => {
-        const fetchUser = async () => {
-            try {
-                const user = await AuthService.getCurrentUser();
+        const token = localStorage.getItem('accessToken');
+        if (!token) return;
+
+        AuthService.getCurrentUser()
+            .then(user => {
                 if (user) {
+                    setIsLoggedIn(true);
                     setFormData(prev => ({
                         ...prev,
                         firstName: user.firstName || prev.firstName,
-                        lastName: user.lastName || prev.lastName,
-                        email: user.email || prev.email,
-                        phone: user.phone || prev.phone
+                        lastName:  user.lastName  || prev.lastName,
+                        email:     user.email     || prev.email,
+                        phone:     user.phone     || prev.phone,
                     }));
                 }
-            } catch (error) {
-                console.log("No active session for prefill.");
-            }
-        };
-        fetchUser();
+            })
+            .catch(() => {});
     }, []);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -84,8 +84,20 @@ const ContactForm = () => {
         )
     }
 
+    const readOnlyClass = 'w-full bg-emerald-50 border-2 border-emerald-200 rounded-2xl p-5 outline-none text-slate-900 font-medium cursor-default';
+    const editableClass = 'w-full bg-slate-50/50 border-2 border-slate-100 rounded-2xl p-5 focus:bg-white focus:border-wiki/30 focus:ring-4 focus:ring-wiki/5 transition-all outline-none text-slate-900 placeholder:text-slate-300 font-medium';
+
     return (
         <form onSubmit={handleSubmit} className="space-y-8">
+
+            {/* Badge session connectée */}
+            {isLoggedIn && (
+                <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 px-4 py-3 rounded-2xl text-sm text-emerald-700 font-semibold">
+                    <CheckCircle2 size={16} className="shrink-0" />
+                    Vos coordonnées sont pré-remplies depuis votre compte
+                </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-3 group">
                     <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1 group-focus-within:text-wiki transition-colors">
@@ -96,8 +108,9 @@ const ContactForm = () => {
                         name="firstName"
                         value={formData.firstName}
                         onChange={handleChange}
+                        readOnly={isLoggedIn}
                         placeholder="Ex: Ahmed"
-                        className="w-full bg-slate-50/50 border-2 border-slate-100 rounded-2xl p-5 focus:bg-white focus:border-wiki/30 focus:ring-4 focus:ring-wiki/5 transition-all outline-none text-slate-900 placeholder:text-slate-300 font-medium"
+                        className={isLoggedIn ? readOnlyClass : editableClass}
                     />
                 </div>
                 <div className="space-y-3 group">
@@ -108,8 +121,9 @@ const ContactForm = () => {
                         name="lastName"
                         value={formData.lastName}
                         onChange={handleChange}
+                        readOnly={isLoggedIn}
                         placeholder="Ex: Ben Ali"
-                        className="w-full bg-slate-50/50 border-2 border-slate-100 rounded-2xl p-5 focus:bg-white focus:border-wiki/30 focus:ring-4 focus:ring-wiki/5 transition-all outline-none text-slate-900 placeholder:text-slate-300 font-medium"
+                        className={isLoggedIn ? readOnlyClass : editableClass}
                     />
                 </div>
             </div>
@@ -124,8 +138,9 @@ const ContactForm = () => {
                     name="email"
                     value={formData.email}
                     onChange={handleChange}
+                    readOnly={isLoggedIn}
                     placeholder="votre@email.com"
-                    className="w-full bg-slate-50/50 border-2 border-slate-100 rounded-2xl p-5 focus:bg-white focus:border-wiki/30 focus:ring-4 focus:ring-wiki/5 transition-all outline-none text-slate-900 placeholder:text-slate-300 font-medium"
+                    className={isLoggedIn ? readOnlyClass : editableClass}
                 />
             </div>
 

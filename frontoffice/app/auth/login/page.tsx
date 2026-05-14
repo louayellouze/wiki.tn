@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { AuthService } from '@/common/services/authService'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { GoogleLogin, CredentialResponse } from '@react-oauth/google'
+import { Eye, EyeOff } from 'lucide-react'
 import Image from 'next/image'
 import '../auth-style.css'
 
@@ -17,6 +18,7 @@ const Login = () => {
     const [error, setError] = useState('');
     const [successMsg, setSuccessMsg] = useState('');
     const [loading, setLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
 
     useEffect(() => {
         if (searchParams.get('registered') === 'true') {
@@ -199,10 +201,10 @@ const Login = () => {
                         </div>
 
                         <div className="form-group">
-                            <div className="input-container">
+                            <div className="input-container" style={{ position: 'relative' }}>
                                 <div className="input-bg"></div>
                                 <input
-                                    type="password"
+                                    type={showPassword ? 'text' : 'password'}
                                     id="password"
                                     name="password"
                                     required
@@ -210,9 +212,23 @@ const Login = () => {
                                     placeholder=" "
                                     value={formData.password}
                                     onChange={handleChange}
+                                    style={{ paddingRight: '48px' }}
                                 />
                                 <label htmlFor="password">Mot de passe</label>
                                 <div className="input-wave"></div>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    style={{
+                                        position: 'absolute', right: '14px', top: '50%',
+                                        transform: 'translateY(-50%)', background: 'none',
+                                        border: 'none', cursor: 'pointer', color: '#94a3b8',
+                                        padding: '4px', zIndex: 10, display: 'flex', alignItems: 'center'
+                                    }}
+                                    aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                                >
+                                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                </button>
                             </div>
                         </div>
 
