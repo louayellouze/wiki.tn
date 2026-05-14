@@ -1,124 +1,124 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { 
-    PlusCircle, 
-    Wrench, 
-    ShoppingCart, 
-    MessageSquare, 
-    Plus,
-    ChevronRight,
-    Settings,
-    FileBarChart,
-    Users
-} from 'lucide-react';
-import { getUserRole } from '@/services/auth.service';
+import {
+  Package, ShoppingCart, Users, MessageSquare,
+  Wrench, Tag, BarChart2, Star, FileText
+} from "lucide-react";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
 
-const ACTION_CARDS = [
-    {
-        title: "Nouveau Produit",
-        desc: "Ajouter au catalogue",
-        icon: PlusCircle,
-        href: "/products",
-        color: "from-blue-500 to-indigo-600",
-        roles: ["ADMIN", "INFOLINE"]
-    },
-    {
-        title: "Wiki Repair",
-        desc: "Tarifs et demandes",
-        icon: Wrench,
-        href: "/repair",
-        color: "from-orange-400 to-red-500",
-        roles: ["ADMIN", "INFOLINE"]
-    },
-    {
-        title: "Commandes",
-        desc: "Ventes récentes",
-        icon: ShoppingCart,
-        href: "/orders",
-        color: "from-emerald-400 to-teal-600",
-        roles: ["ADMIN", "INFOLINE"]
-    },
-    {
-        title: "Gestion Système",
-        desc: "Configuration avancée",
-        icon: Settings,
-        href: "/settings",
-        color: "from-gray-700 to-black",
-        roles: ["ADMIN"]
-    },
-    {
-        title: "Rapports",
-        desc: "Analyse profonde",
-        icon: FileBarChart,
-        href: "/analytics",
-        color: "from-indigo-600 to-purple-700",
-        roles: ["ADMIN"]
-    },
-    {
-        title: "Utilisateurs",
-        desc: "Gérer l'équipe",
-        icon: Users,
-        href: "/users",
-        color: "from-cyan-500 to-blue-600",
-        roles: ["ADMIN"]
-    }
+const actions = [
+  {
+    title: "Commandes",
+    description: "Suivi des ventes",
+    icon: ShoppingCart,
+    href: "/orders",
+    accent: "primary",
+  },
+  {
+    title: "Clients",
+    description: "Base utilisateurs",
+    icon: Users,
+    href: "/users",
+    accent: "blue",
+  },
+  {
+    title: "Produits",
+    description: "Catalogue",
+    icon: Package,
+    href: "/products",
+    accent: "violet",
+  },
+  {
+    title: "Réparations",
+    description: "Demandes SAV",
+    icon: Wrench,
+    href: "/repair-requests",
+    accent: "orange",
+  },
+  {
+    title: "Coupons",
+    description: "Promotions",
+    icon: Tag,
+    href: "/coupons",
+    accent: "pink",
+  },
+  {
+    title: "Avis",
+    description: "Feedback clients",
+    icon: Star,
+    href: "/reviews",
+    accent: "amber",
+  },
+  {
+    title: "Support",
+    description: "Messages contact",
+    icon: MessageSquare,
+    href: "/contact-messages",
+    accent: "cyan",
+  },
+  {
+    title: "Paiements",
+    description: "Transactions",
+    icon: FileText,
+    href: "/payments",
+    accent: "emerald",
+  },
 ];
 
-export const QuickActions = () => {
-    const [userRole, setUserRole] = useState<string | null>(null);
-
-    useEffect(() => {
-        setUserRole(getUserRole());
-    }, []);
-
-    const filteredActions = ACTION_CARDS.filter(action => {
-        if (!userRole) return true; // Show all if no role yet
-        const normalizedRole = userRole.toUpperCase().replace('ROLE_', '');
-        return action.roles.includes(normalizedRole);
-    });
-
-    return (
-        <div className="mt-8 mb-12">
-            <h2 className="mb-6 text-xl font-bold text-white flex items-center gap-3">
-                <div className="h-8 w-1 bg-indigo-500 rounded-full"></div>
-                Commandes Rapides
-                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest bg-white/5 px-2 py-1 rounded-md border border-white/10">
-                    {userRole || 'Anonyme'}
-                </span>
-            </h2>
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-                {filteredActions.map((action, idx) => (
-                    <Link 
-                        key={idx} 
-                        href={action.href}
-                        className="group relative glass-premium rounded-2xl p-5 transition-all duration-300 hover:-translate-y-2 glow-card overflow-hidden"
-                    >
-                        {/* Decorative Background Icon */}
-                        <action.icon className="absolute -right-4 -bottom-4 w-24 h-24 text-white/5 rotate-12 transition-transform group-hover:scale-110" />
-
-                        <div className={`mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${action.color} text-white shadow-lg transition-transform group-hover:scale-110 group-hover:rotate-6`}>
-                            <action.icon size={24} />
-                        </div>
-                        
-                        <div className="relative z-10">
-                            <div className="flex items-center gap-2 mb-1">
-                                <h3 className="font-black text-white text-sm tracking-tight">{action.title}</h3>
-                                {action.roles.length === 1 && action.roles[0] === "ADMIN" && (
-                                    <span className="text-[8px] font-black bg-indigo-500 text-white px-1.5 py-0.5 rounded uppercase">Elite</span>
-                                )}
-                            </div>
-                            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest group-hover:text-gray-400 transition-colors">{action.desc}</p>
-                        </div>
-
-                        <div className="mt-4 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0">
-                            <span className="text-[9px] font-black text-indigo-400 uppercase tracking-tighter">Ouvrir</span>
-                            <ChevronRight className="text-indigo-400" size={14} />
-                        </div>
-                    </Link>
-                ))}
-            </div>
-        </div>
-    );
+const ACCENT: Record<string, { bg: string; text: string; glow: string }> = {
+  primary:  { bg: 'bg-primary/10 border-primary/20',     text: 'text-primary',     glow: 'hover:shadow-primary/10' },
+  blue:     { bg: 'bg-blue-500/10 border-blue-500/20',   text: 'text-blue-400',    glow: 'hover:shadow-blue-500/10' },
+  violet:   { bg: 'bg-violet-500/10 border-violet-500/20', text: 'text-violet-400', glow: 'hover:shadow-violet-500/10' },
+  orange:   { bg: 'bg-orange-500/10 border-orange-500/20', text: 'text-orange-400', glow: 'hover:shadow-orange-500/10' },
+  pink:     { bg: 'bg-pink-500/10 border-pink-500/20',   text: 'text-pink-400',    glow: 'hover:shadow-pink-500/10' },
+  amber:    { bg: 'bg-amber-500/10 border-amber-500/20', text: 'text-amber-400',   glow: 'hover:shadow-amber-500/10' },
+  cyan:     { bg: 'bg-cyan-500/10 border-cyan-500/20',   text: 'text-cyan-400',    glow: 'hover:shadow-cyan-500/10' },
+  emerald:  { bg: 'bg-emerald-500/10 border-emerald-500/20', text: 'text-emerald-400', glow: 'hover:shadow-emerald-500/10' },
 };
+
+export function QuickActions() {
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <BarChart2 size={14} className="text-primary" />
+          <span className="section-header">Accès rapide</span>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+        {actions.map((action, i) => {
+          const a = ACCENT[action.accent];
+          return (
+            <Link
+              key={i}
+              href={action.href}
+              className={cn(
+                "group relative flex flex-col items-center gap-3 p-4 rounded-2xl",
+                "glass-premium border border-white/[0.06] transition-all duration-300",
+                "hover:-translate-y-1 hover:shadow-lg hover:border-white/10",
+                a.glow,
+                "text-center"
+              )}
+            >
+              <div className={cn(
+                "flex h-10 w-10 items-center justify-center rounded-xl border transition-all duration-300",
+                a.bg, a.text,
+                "group-hover:scale-110"
+              )}>
+                <action.icon size={18} />
+              </div>
+              <div>
+                <p className="text-[11px] font-black text-white uppercase tracking-tight leading-none mb-0.5">
+                  {action.title}
+                </p>
+                <p className="text-[9px] text-slate-600 font-medium">{action.description}</p>
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
