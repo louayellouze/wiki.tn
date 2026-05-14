@@ -1,47 +1,37 @@
 import { cn } from "@/lib/utils";
-import { cva } from "class-variance-authority";
 import Link from "next/link";
 import { useSidebarContext } from "./sidebar-context";
 
-const menuItemBaseStyles = cva(
-  "rounded-lg px-3.5 font-medium text-dark-4 transition-all duration-200 dark:text-dark-6",
-  {
-    variants: {
-      isActive: {
-        true: "bg-[rgba(87,80,241,0.07)] text-primary hover:bg-[rgba(87,80,241,0.07)] dark:bg-[#FFFFFF1A] dark:text-white",
-        false:
-          "hover:bg-gray-100 hover:text-dark hover:dark:bg-[#FFFFFF1A] hover:dark:text-white",
-      },
-    },
-    defaultVariants: {
-      isActive: false,
-    },
-  },
-);
+type BaseProps = {
+  className?: string;
+  children: React.ReactNode;
+  isActive: boolean;
+};
 
-export function MenuItem(
-  props: {
-    className?: string;
-    children: React.ReactNode;
-    isActive: boolean;
-  } & ({ as?: "button"; onClick: () => void } | { as: "link"; href: string }),
-) {
+type Props = BaseProps &
+  ({ as?: "button"; onClick: () => void } | { as: "link"; href: string });
+
+export function MenuItem(props: Props) {
   const { toggleSidebar, isMobile } = useSidebarContext();
+
+  const base = cn(
+    "relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[11px] font-bold uppercase tracking-[0.12em] transition-all duration-200",
+    props.isActive
+      ? "bg-primary/10 text-primary border border-primary/25 shadow-[0_0_16px_rgba(0,166,81,0.08)]"
+      : "text-slate-500 border border-transparent hover:bg-white/[0.05] hover:text-slate-200",
+    props.className,
+  );
 
   if (props.as === "link") {
     return (
       <Link
         href={props.href}
-        // Close sidebar on clicking link if it's mobile
         onClick={() => isMobile && toggleSidebar()}
-        className={cn(
-          menuItemBaseStyles({
-            isActive: props.isActive,
-            className: "relative block py-2",
-          }),
-          props.className,
-        )}
+        className={base}
       >
+        {props.isActive && (
+          <span className="absolute left-0 top-1/2 -translate-y-1/2 h-4 w-0.5 bg-primary rounded-r-full" />
+        )}
         {props.children}
       </Link>
     );
@@ -51,10 +41,7 @@ export function MenuItem(
     <button
       onClick={props.onClick}
       aria-expanded={props.isActive}
-      className={menuItemBaseStyles({
-        isActive: props.isActive,
-        className: "flex w-full items-center gap-3 py-3",
-      })}
+      className={base}
     >
       {props.children}
     </button>
