@@ -65,10 +65,15 @@ const ProfilePage = () => {
     const [showSecurity, setShowSecurity] = useState(false);
 
     const fetchOrders = useCallback(async () => {
+        // Charger depuis le cache session d'abord
+        const cached = sessionStorage.getItem('profile_orders');
+        if (cached) setOrders(JSON.parse(cached));
+
         setOrdersLoading(true);
         try {
             const data = await getMyOrders();
             setOrders(data);
+            sessionStorage.setItem('profile_orders', JSON.stringify(data));
         } catch (err) {
             console.error("Failed to fetch orders", err);
         } finally {
@@ -77,10 +82,14 @@ const ProfilePage = () => {
     }, []);
 
     const fetchRepairs = useCallback(async () => {
+        const cached = sessionStorage.getItem('profile_repairs');
+        if (cached) setRepairs(JSON.parse(cached));
+
         setRepairsLoading(true);
         try {
             const data = await repairService.getMyRepairRequests();
             setRepairs(data);
+            sessionStorage.setItem('profile_repairs', JSON.stringify(data));
         } catch (err) {
             console.error("Failed to fetch repairs", err);
         } finally {
@@ -101,10 +110,14 @@ const ProfilePage = () => {
     }, []);
 
     const fetchClaims = useCallback(async () => {
+        const cached = sessionStorage.getItem('profile_claims');
+        if (cached) setClaims(JSON.parse(cached));
+
         setClaimsLoading(true);
         try {
             const data = await contactService.getMyMessages();
             setClaims(data);
+            sessionStorage.setItem('profile_claims', JSON.stringify(data));
         } catch (err) {
             console.error("Failed to fetch claims", err);
         } finally {

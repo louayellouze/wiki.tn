@@ -21,12 +21,21 @@ export default function RepairPage() {
     const [activeTab, setActiveTab] = useState<string>('');
     const [selectedDevice, setSelectedDevice] = useState<string>('');
     
-    // Form state
-    const [formData, setFormData] = useState<Partial<RepairRequest>>({
-        subject: '',
-        status: 'PENDING'
+    // Form state — persisté en sessionStorage pour ne pas perdre les données
+    const [formData, setFormData] = useState<Partial<RepairRequest>>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = sessionStorage.getItem('repair_form_draft');
+            if (saved) return JSON.parse(saved);
+        }
+        return { subject: '', status: 'PENDING' };
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const updateForm = (updates: Partial<RepairRequest>) => {
+        const next = { ...formData, ...updates };
+        setFormData(next);
+        sessionStorage.setItem('repair_form_draft', JSON.stringify(next));
+    };
 
     useEffect(() => {
         const fetchData = async () => {
@@ -64,7 +73,8 @@ export default function RepairPage() {
                 deviceType: selectedDevice
             });
             alert("Votre demande a été envoyée avec succès ! Notre équipe vous contactera sous peu.");
-            setFormData({ subject: '' });
+            setFormData({ subject: '', status: 'PENDING' });
+            sessionStorage.removeItem('repair_form_draft');
         } catch (error) {
             alert("Une erreur est survenue lors de l'envoi de votre demande.");
         } finally {
@@ -367,50 +377,55 @@ export default function RepairPage() {
                                 </p>
                             </div>
 
-                            <form onSubmit={handleSubmit} className="space-y-8 bg-slate-50/50 p-10 rounded-[3rem] border border-slate-100">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <form onSubmit={handleSubmit} className="space-y-6 bg-slate-50/50 p-5 md:p-10 rounded-2xl md:rounded-[3rem] border border-slate-100">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-8">
                                     <div className="space-y-2">
                                         <label className="text-sm font-bold text-slate-900 ml-1">Nom <span className="text-red-500">*</span></label>
-                                        <input 
-                                            type="text" required placeholder="Votre Nom" 
-                                            className="w-full px-6 py-4 rounded-2xl bg-white border border-slate-200 focus:border-wiki outline-none transition-all shadow-sm"
-                                            onChange={(e) => setFormData({...formData, lastName: e.target.value})}
+                                        <input
+                                            type="text" required placeholder="Votre Nom"
+                                            value={formData.lastName || ''}
+                                            className="w-full px-4 md:px-6 py-3 md:py-4 rounded-2xl bg-white border border-slate-200 focus:border-wiki outline-none transition-all shadow-sm text-slate-900 text-base placeholder:text-slate-400"
+                                            onChange={(e) => updateForm({ lastName: e.target.value })}
                                         />
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-sm font-bold text-slate-900 ml-1">Prénom <span className="text-red-500">*</span></label>
-                                        <input 
-                                            type="text" required placeholder="Votre Prénom" 
-                                            className="w-full px-6 py-4 rounded-2xl bg-white border border-slate-200 focus:border-wiki outline-none transition-all shadow-sm"
-                                            onChange={(e) => setFormData({...formData, firstName: e.target.value})}
+                                        <input
+                                            type="text" required placeholder="Votre Prénom"
+                                            value={formData.firstName || ''}
+                                            className="w-full px-4 md:px-6 py-3 md:py-4 rounded-2xl bg-white border border-slate-200 focus:border-wiki outline-none transition-all shadow-sm text-slate-900 text-base placeholder:text-slate-400"
+                                            onChange={(e) => updateForm({ firstName: e.target.value })}
                                         />
                                     </div>
                                 </div>
 
                                 <div className="space-y-2">
                                     <label className="text-sm font-bold text-slate-900 ml-1">Email <span className="text-red-500">*</span></label>
-                                    <input 
-                                        type="email" required placeholder="Votre email" 
-                                        className="w-full px-6 py-4 rounded-2xl bg-white border border-slate-200 focus:border-wiki outline-none transition-all shadow-sm"
-                                        onChange={(e) => setFormData({...formData, email: e.target.value})}
+                                    <input
+                                        type="email" required placeholder="Votre email"
+                                        value={formData.email || ''}
+                                        className="w-full px-4 md:px-6 py-3 md:py-4 rounded-2xl bg-white border border-slate-200 focus:border-wiki outline-none transition-all shadow-sm text-slate-900 text-base placeholder:text-slate-400"
+                                        onChange={(e) => updateForm({ email: e.target.value })}
                                     />
                                 </div>
 
                                 <div className="space-y-2">
                                     <label className="text-sm font-bold text-slate-900 ml-1">Téléphone <span className="text-red-500">*</span></label>
-                                    <input 
-                                        type="tel" required placeholder="Votre numéro de téléphone" 
-                                        className="w-full px-6 py-4 rounded-2xl bg-white border border-slate-200 focus:border-wiki outline-none transition-all shadow-sm"
-                                        onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                                    <input
+                                        type="tel" required placeholder="Votre numéro de téléphone"
+                                        value={formData.phone || ''}
+                                        className="w-full px-4 md:px-6 py-3 md:py-4 rounded-2xl bg-white border border-slate-200 focus:border-wiki outline-none transition-all shadow-sm text-slate-900 text-base placeholder:text-slate-400"
+                                        onChange={(e) => updateForm({ phone: e.target.value })}
                                     />
                                 </div>
 
                                 <div className="space-y-2">
                                     <label className="text-sm font-bold text-slate-900 ml-1">Objet de la demande <span className="text-red-500">*</span></label>
-                                    <select 
-                                        required 
-                                        className="w-full px-6 py-4 rounded-2xl bg-white border border-slate-200 focus:border-wiki outline-none transition-all shadow-sm appearance-none"
-                                        onChange={(e) => setFormData({...formData, subject: e.target.value})}
+                                    <select
+                                        required
+                                        value={formData.subject || ''}
+                                        className="w-full px-4 md:px-6 py-3 md:py-4 rounded-2xl bg-white border border-slate-200 focus:border-wiki outline-none transition-all shadow-sm text-slate-900 text-base appearance-none"
+                                        onChange={(e) => updateForm({ subject: e.target.value })}
                                     >
                                         <option value="">Sélectionner...</option>
                                         <option value="Réparation">Réparation</option>
@@ -422,44 +437,48 @@ export default function RepairPage() {
 
                                 <div className="space-y-2">
                                     <label className="text-sm font-bold text-slate-900 ml-1">Message <span className="text-red-500">*</span></label>
-                                    <textarea 
-                                        required placeholder="Décrivez votre problème..." rows={6} 
-                                        className="w-full px-6 py-4 rounded-2xl bg-white border border-slate-200 focus:border-wiki outline-none transition-all shadow-sm"
-                                        onChange={(e) => setFormData({...formData, message: e.target.value})}
+                                    <textarea
+                                        required placeholder="Décrivez votre problème..." rows={5}
+                                        value={formData.message || ''}
+                                        className="w-full px-4 md:px-6 py-3 md:py-4 rounded-2xl bg-white border border-slate-200 focus:border-wiki outline-none transition-all shadow-sm text-slate-900 text-base placeholder:text-slate-400"
+                                        onChange={(e) => updateForm({ message: e.target.value })}
                                     ></textarea>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-8">
                                     <div className="space-y-2">
                                         <label className="text-sm font-bold text-slate-900 ml-1">Type d&apos;appareil</label>
-                                        <input 
+                                        <input
                                             type="text" placeholder="Ex: Smartphone, Ordinateur..." value={selectedDevice}
                                             readOnly
-                                            className="w-full px-6 py-4 rounded-2xl bg-slate-100 border border-slate-200 outline-none shadow-sm cursor-not-allowed"
+                                            className="w-full px-4 md:px-6 py-3 md:py-4 rounded-2xl bg-slate-100 border border-slate-200 outline-none shadow-sm text-slate-700 text-base cursor-not-allowed"
                                         />
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-sm font-bold text-slate-900 ml-1">Marque</label>
-                                        <input 
-                                            type="text" placeholder="Ex: Apple, Samsung..." 
-                                            className="w-full px-6 py-4 rounded-2xl bg-white border border-slate-200 focus:border-wiki outline-none transition-all shadow-sm"
-                                            onChange={(e) => setFormData({...formData, brand: e.target.value})}
+                                        <input
+                                            type="text" placeholder="Ex: Apple, Samsung..."
+                                            value={formData.brand || ''}
+                                            className="w-full px-4 md:px-6 py-3 md:py-4 rounded-2xl bg-white border border-slate-200 focus:border-wiki outline-none transition-all shadow-sm text-slate-900 text-base placeholder:text-slate-400"
+                                            onChange={(e) => updateForm({ brand: e.target.value })}
                                         />
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-sm font-bold text-slate-900 ml-1">Modèle</label>
-                                        <input 
-                                            type="text" placeholder="Ex: iPhone 13, MacBook Pro..." 
-                                            className="w-full px-6 py-4 rounded-2xl bg-white border border-slate-200 focus:border-wiki outline-none transition-all shadow-sm"
-                                            onChange={(e) => setFormData({...formData, model: e.target.value})}
+                                        <input
+                                            type="text" placeholder="Ex: iPhone 13, MacBook Pro..."
+                                            value={formData.model || ''}
+                                            className="w-full px-4 md:px-6 py-3 md:py-4 rounded-2xl bg-white border border-slate-200 focus:border-wiki outline-none transition-all shadow-sm text-slate-900 text-base placeholder:text-slate-400"
+                                            onChange={(e) => updateForm({ model: e.target.value })}
                                         />
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-sm font-bold text-slate-900 ml-1">Numéro de série</label>
-                                        <input 
-                                            type="text" placeholder="Si disponible..." 
-                                            className="w-full px-6 py-4 rounded-2xl bg-white border border-slate-200 focus:border-wiki outline-none transition-all shadow-sm"
-                                            onChange={(e) => setFormData({...formData, serialNumber: e.target.value})}
+                                        <input
+                                            type="text" placeholder="Si disponible..."
+                                            value={formData.serialNumber || ''}
+                                            className="w-full px-4 md:px-6 py-3 md:py-4 rounded-2xl bg-white border border-slate-200 focus:border-wiki outline-none transition-all shadow-sm text-slate-900 text-base placeholder:text-slate-400"
+                                            onChange={(e) => updateForm({ serialNumber: e.target.value })}
                                         />
                                     </div>
                                 </div>
