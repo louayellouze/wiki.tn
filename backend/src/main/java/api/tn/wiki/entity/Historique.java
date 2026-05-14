@@ -1,6 +1,8 @@
 package api.tn.wiki.entity;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
 import java.time.LocalDateTime;
 
 @Entity
@@ -26,7 +28,8 @@ public class Historique {
     private Long entityId;
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "user_id", nullable = true)
+    @NotFound(action = NotFoundAction.IGNORE)   // retourne null si l'utilisateur a été supprimé
     private User user;
 
     @Column(name = "action_date", nullable = false)
