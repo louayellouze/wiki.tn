@@ -6,7 +6,7 @@ import Link from 'next/link'
 import CartSection from '@/common/components/layouts/CartSection'
 import Navigation from '@/common/components/layouts/Navigation'
 import UserMenu from '@/common/components/layouts/UserMenu'
-import { Menu, X } from 'lucide-react'
+import { Menu, X, User } from 'lucide-react'
 
 const HeaderBottom = () => {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -56,12 +56,9 @@ const HeaderBottom = () => {
                             <UserMenu />
                         </div>
                         <div className="sm:hidden">
-                            <button className="text-white p-2 hover:bg-white/10 rounded-xl transition-colors">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                    <circle cx="12" cy="7" r="4"></circle>
-                                </svg>
-                            </button>
+                            <Link href="/profile" className="text-white p-2 hover:bg-white/10 rounded-xl transition-colors block">
+                                <User size={24} />
+                            </Link>
                         </div>
                         <CartSection />
                     </div>

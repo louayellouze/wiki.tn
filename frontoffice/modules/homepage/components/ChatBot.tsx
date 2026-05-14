@@ -67,10 +67,10 @@ const ChatBot = () => {
     };
 
     return (
-        <div className="fixed bottom-6 right-6 z-[100] flex flex-col items-end">
+        <div className="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-[100] flex flex-col items-end">
             {/* Chat Window */}
             {isOpen && (
-                <div className="w-[360px] md:w-[400px] h-[520px] bg-white rounded-3xl shadow-[0_25px_60px_-12px_rgba(0,0,0,0.25)] border border-slate-100 flex flex-col overflow-hidden mb-4 animate-in slide-in-from-bottom-5 duration-300">
+                <div className="w-[calc(100vw-2rem)] max-w-[360px] md:max-w-[400px] h-[520px] bg-white rounded-3xl shadow-[0_25px_60px_-12px_rgba(0,0,0,0.25)] border border-slate-100 flex flex-col overflow-hidden mb-4 animate-in slide-in-from-bottom-5 duration-300">
                     
                     {/* Header */}
                     <div className="bg-gradient-to-r from-wiki to-wiki-dark p-5 text-white flex justify-between items-center relative overflow-hidden">

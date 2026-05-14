@@ -60,7 +60,7 @@ const Navigation: React.FC<NavigationProps> = ({ mobileMenuOpen = false, setMobi
                             </div>
 
                             {/* Mega Menu Dropdown */}
-                            <div className={`absolute left-16 w-[1000px] h-[550px] bg-white/95 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] z-50 top-16 border border-slate-200 rounded-b-2xl overflow-hidden transition-all duration-300 flex ${isMenuOpen || isManualOpen ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 -translate-y-4 pointer-events-none'}`}>
+                            <div className={`absolute left-0 lg:left-4 xl:left-16 w-[min(1000px,calc(100vw-2rem))] h-[550px] bg-white/95 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] z-50 top-16 border border-slate-200 rounded-b-2xl overflow-hidden transition-all duration-300 flex ${isMenuOpen || isManualOpen ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 -translate-y-4 pointer-events-none'}`}>
                                 {/* Level 1: Main Categories */}
                                 <div className="w-1/3 border-r border-slate-100 h-full overflow-y-auto bg-slate-50/50 p-4 scrollbar-thin scrollbar-thumb-slate-200">
                                     <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 px-2">Catégories</div>
