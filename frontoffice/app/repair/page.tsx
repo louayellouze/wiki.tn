@@ -5,6 +5,7 @@ import HeaderTop from '@/common/components/layouts/HeaderTop';
 import HeaderBottom from '@/common/components/layouts/HeaderBottom';
 import Footer from '@/common/components/layouts/Footer';
 import { repairService } from '@/common/services/repairService';
+import { AuthService } from '@/common/services/authService';
 import { RepairItem, RepairRequest } from '@/app/dtos/repair';
 import * as Icons from 'lucide-react';
 import Image from 'next/image';
@@ -30,12 +31,39 @@ export default function RepairPage() {
         return { subject: '', status: 'PENDING' };
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
 
     const updateForm = (updates: Partial<RepairRequest>) => {
         const next = { ...formData, ...updates };
         setFormData(next);
         sessionStorage.setItem('repair_form_draft', JSON.stringify(next));
     };
+
+    // Pré-remplir le formulaire avec les données de l'utilisateur connecté
+    useEffect(() => {
+        const token = localStorage.getItem('accessToken');
+        if (!token) return;
+        setIsLoggedIn(true);
+
+        // Ne pré-remplir que si le formulaire est vide (pas de brouillon sauvegardé)
+        const draft = sessionStorage.getItem('repair_form_draft');
+        const hasDraft = draft && JSON.parse(draft).firstName;
+        if (hasDraft) return;
+
+        AuthService.getCurrentUser()
+            .then(user => {
+                const prefilled: Partial<RepairRequest> = {
+                    firstName: user.firstName || '',
+                    lastName:  user.lastName  || '',
+                    email:     user.email     || '',
+                    phone:     user.phone     || '',
+                    status:    'PENDING',
+                };
+                setFormData(prefilled);
+                sessionStorage.setItem('repair_form_draft', JSON.stringify(prefilled));
+            })
+            .catch(() => {});
+    }, []);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -378,14 +406,24 @@ export default function RepairPage() {
                             </div>
 
                             <form onSubmit={handleSubmit} className="space-y-6 bg-slate-50/50 p-5 md:p-10 rounded-2xl md:rounded-[3rem] border border-slate-100">
+
+                                {/* Badge connecté */}
+                                {isLoggedIn && (
+                                    <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 px-4 py-2.5 rounded-xl text-sm text-emerald-700 font-semibold">
+                                        <Icons.CheckCircle2 size={16} />
+                                        Vos informations ont été pré-remplies depuis votre compte
+                                    </div>
+                                )}
+
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-8">
                                     <div className="space-y-2">
                                         <label className="text-sm font-bold text-slate-900 ml-1">Nom <span className="text-red-500">*</span></label>
                                         <input
                                             type="text" required placeholder="Votre Nom"
                                             value={formData.lastName || ''}
-                                            className="w-full px-4 md:px-6 py-3 md:py-4 rounded-2xl bg-white border border-slate-200 focus:border-wiki outline-none transition-all shadow-sm text-slate-900 text-base placeholder:text-slate-400"
-                                            onChange={(e) => updateForm({ lastName: e.target.value })}
+                                            readOnly={isLoggedIn}
+                                            className={`w-full px-4 md:px-6 py-3 md:py-4 rounded-2xl border outline-none transition-all shadow-sm text-slate-900 text-base placeholder:text-slate-400 ${isLoggedIn ? 'bg-emerald-50 border-emerald-200 cursor-default' : 'bg-white border-slate-200 focus:border-wiki'}`}
+                                            onChange={(e) => !isLoggedIn && updateForm({ lastName: e.target.value })}
                                         />
                                     </div>
                                     <div className="space-y-2">
@@ -393,8 +431,9 @@ export default function RepairPage() {
                                         <input
                                             type="text" required placeholder="Votre Prénom"
                                             value={formData.firstName || ''}
-                                            className="w-full px-4 md:px-6 py-3 md:py-4 rounded-2xl bg-white border border-slate-200 focus:border-wiki outline-none transition-all shadow-sm text-slate-900 text-base placeholder:text-slate-400"
-                                            onChange={(e) => updateForm({ firstName: e.target.value })}
+                                            readOnly={isLoggedIn}
+                                            className={`w-full px-4 md:px-6 py-3 md:py-4 rounded-2xl border outline-none transition-all shadow-sm text-slate-900 text-base placeholder:text-slate-400 ${isLoggedIn ? 'bg-emerald-50 border-emerald-200 cursor-default' : 'bg-white border-slate-200 focus:border-wiki'}`}
+                                            onChange={(e) => !isLoggedIn && updateForm({ firstName: e.target.value })}
                                         />
                                     </div>
                                 </div>
@@ -404,8 +443,9 @@ export default function RepairPage() {
                                     <input
                                         type="email" required placeholder="Votre email"
                                         value={formData.email || ''}
-                                        className="w-full px-4 md:px-6 py-3 md:py-4 rounded-2xl bg-white border border-slate-200 focus:border-wiki outline-none transition-all shadow-sm text-slate-900 text-base placeholder:text-slate-400"
-                                        onChange={(e) => updateForm({ email: e.target.value })}
+                                        readOnly={isLoggedIn}
+                                        className={`w-full px-4 md:px-6 py-3 md:py-4 rounded-2xl border outline-none transition-all shadow-sm text-slate-900 text-base placeholder:text-slate-400 ${isLoggedIn ? 'bg-emerald-50 border-emerald-200 cursor-default' : 'bg-white border-slate-200 focus:border-wiki'}`}
+                                        onChange={(e) => !isLoggedIn && updateForm({ email: e.target.value })}
                                     />
                                 </div>
 
