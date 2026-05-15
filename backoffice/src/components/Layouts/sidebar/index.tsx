@@ -141,10 +141,19 @@ export function Sidebar() {
           </nav>
 
           {/* Footer */}
-          <div className="px-2 py-3 border-t border-white/[0.05]">
-            <div className="flex items-center gap-2">
-              <div className="live-dot"><span /><span /></div>
-              <span className="section-header">v2.0 — Wiki Admin</span>
+          <div className="px-2 py-3 border-t border-white/[0.05] space-y-2">
+            <div className="flex items-center justify-between px-1">
+              <div className="flex items-center gap-2">
+                <div className="live-dot"><span /><span /></div>
+                <span className="section-header">Système actif</span>
+              </div>
+              <span className="text-[9px] text-slate-700 font-black uppercase">v2.0</span>
+            </div>
+            <div className="bg-white/[0.02] border border-white/[0.04] rounded-xl px-3 py-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[9px] text-slate-600 font-bold uppercase tracking-wider">Wiki Admin</span>
+                <span className="text-[8px] text-emerald-600 font-black">ONLINE</span>
+              </div>
             </div>
           </div>
         </div>
