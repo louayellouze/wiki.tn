@@ -15,19 +15,19 @@ import java.util.List;
 @Repository
 public interface ReviewRepository extends JpaRepository<Review, Long> {
 
-    @Query("SELECT r FROM Review r LEFT JOIN FETCH r.user LEFT JOIN FETCH r.product p LEFT JOIN FETCH p.images WHERE r.product.id = :productId ORDER BY r.createdAt DESC")
+    @Query("SELECT r FROM Review r LEFT JOIN FETCH r.user LEFT JOIN FETCH r.product WHERE r.product.id = :productId ORDER BY r.createdAt DESC")
     List<Review> findByProductIdOrderByCreatedAtDesc(@Param("productId") Integer productId);
 
-    @EntityGraph(attributePaths = {"user", "product", "product.images"})
+    @EntityGraph(attributePaths = {"user", "product"})
     List<Review> findByProductId(Integer productId);
 
-    @EntityGraph(attributePaths = {"user", "product", "product.images"})
+    @EntityGraph(attributePaths = {"user", "product"})
     Page<Review> findByProductId(Integer productId, Pageable pageable);
 
-    @EntityGraph(attributePaths = {"user", "product", "product.images"})
+    @EntityGraph(attributePaths = {"user", "product"})
     List<Review> findByUserOrderByCreatedAtDesc(User user);
 
-    @EntityGraph(attributePaths = {"user", "product", "product.images"})
+    @EntityGraph(attributePaths = {"user", "product"})
     Page<Review> findAll(Pageable pageable);
 
     long countAllBySentimentIsNull();

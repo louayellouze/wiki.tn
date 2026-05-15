@@ -16,7 +16,7 @@ import java.util.Optional;
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Integer>, JpaSpecificationExecutor<Product> {
 
-    @EntityGraph(attributePaths = {"brand", "images", "categories"})
+    @EntityGraph(attributePaths = {"brand", "images"})
     Page<Product> findAll(org.springframework.data.domain.Pageable pageable);
 
     Optional<Product> findBySlug(String slug);
