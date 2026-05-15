@@ -1,23 +1,38 @@
 package api.tn.wiki.repository;
 
 import api.tn.wiki.entity.Review;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
-
+import api.tn.wiki.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
 import java.util.List;
 
 @Repository
 public interface ReviewRepository extends JpaRepository<Review, Long> {
+
+    @Query("SELECT r FROM Review r LEFT JOIN FETCH r.user LEFT JOIN FETCH r.product p LEFT JOIN FETCH p.images WHERE r.product.id = :productId ORDER BY r.createdAt DESC")
+    List<Review> findByProductIdOrderByCreatedAtDesc(@Param("productId") Integer productId);
+
+    @EntityGraph(attributePaths = {"user", "product", "product.images"})
     List<Review> findByProductId(Integer productId);
-    List<Review> findByProductIdOrderByCreatedAtDesc(Integer productId);
+
+    @EntityGraph(attributePaths = {"user", "product", "product.images"})
     Page<Review> findByProductId(Integer productId, Pageable pageable);
-    List<Review> findByUserOrderByCreatedAtDesc(api.tn.wiki.entity.User user);
-    
+
+    @EntityGraph(attributePaths = {"user", "product", "product.images"})
+    List<Review> findByUserOrderByCreatedAtDesc(User user);
+
+    @EntityGraph(attributePaths = {"user", "product", "product.images"})
+    Page<Review> findAll(Pageable pageable);
+
     long countAllBySentimentIsNull();
     long countAllBySentimentScore(Double score);
 
-    @org.springframework.data.jpa.repository.Query("SELECT r FROM Review r WHERE r.sentiment IS NULL OR r.sentimentScore = 0.5")
+    @Query("SELECT r FROM Review r WHERE r.sentiment IS NULL OR r.sentimentScore = 0.5")
     List<Review> findAllToAnalyze();
 }

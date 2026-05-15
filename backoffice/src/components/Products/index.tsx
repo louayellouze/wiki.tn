@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
     Plus,
     Search,
@@ -104,24 +104,27 @@ const Products = () => {
     const [productToDelete, setProductToDelete] = useState<Product | null>(null);
 
     const [isClient, setIsClient] = useState(false);
+    const modalDataLoaded = useRef(false);
 
     useEffect(() => {
         setIsClient(true);
-        fetchSpecKeys();
         fetchCategories();
-        fetchBrands();
+        fetchProducts(0, searchTerm, selectedCategoryId, selectedStockStatus, showOnlyFlashSale);
     }, []);
 
     useEffect(() => {
         const timer = setTimeout(() => {
+            setCurrentPage(0);
             fetchProducts(0, searchTerm, selectedCategoryId, selectedStockStatus, showOnlyFlashSale);
-        }, 500);
+        }, 400);
         return () => clearTimeout(timer);
     }, [searchTerm, itemsPerPage, selectedCategoryId, selectedStockStatus, showOnlyFlashSale]);
 
-    useEffect(() => {
-        fetchProducts(currentPage, searchTerm, selectedCategoryId, selectedStockStatus, showOnlyFlashSale);
-    }, [currentPage]);
+    const loadModalData = async () => {
+        if (modalDataLoaded.current) return;
+        modalDataLoaded.current = true;
+        await Promise.all([fetchSpecKeys(), fetchBrands()]);
+    };
 
     const fetchCategories = async () => {
         try {
@@ -145,7 +148,7 @@ const Products = () => {
                 setProducts(response.content);
                 setTotalPages(response.totalPages);
                 setTotalElements(response.totalElements);
-                if (page !== currentPage) setCurrentPage(page);
+                setCurrentPage(page);
             } else {
                 setProducts(response as Product[]);
             }
@@ -465,7 +468,7 @@ const Products = () => {
                 </div>
                 {isClient && !isInfoline() && (
                     <button
-                        onClick={() => setIsCreateModalOpen(true)}
+                        onClick={() => { loadModalData(); setIsCreateModalOpen(true); }}
                         className="flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-indigo-700 active:scale-95"
                     >
                         <Plus size={18} />
@@ -688,6 +691,7 @@ const Products = () => {
                                                                 brandId: fullProduct.brand?.id,
                                                                 isFlashSale: fullProduct.isFlashSale || false
                                                             });
+                                                            loadModalData();
                                                             setIsEditModalOpen(true);
                                                         } catch(err) {
                                                             console.error(err);
@@ -736,7 +740,7 @@ const Products = () => {
                     <div className="flex gap-2">
                         <button
                             disabled={currentPage === 0}
-                            onClick={() => setCurrentPage(p => p - 1)}
+                            onClick={() => { const p = currentPage - 1; setCurrentPage(p); fetchProducts(p, searchTerm, selectedCategoryId, selectedStockStatus, showOnlyFlashSale); }}
                             className="flex items-center gap-1 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition-all hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
                         >
                             Précédent
@@ -745,7 +749,7 @@ const Products = () => {
                             {[...Array(totalPages)].map((_, i) => (
                                 <button
                                     key={i}
-                                    onClick={() => setCurrentPage(i)}
+                                    onClick={() => { setCurrentPage(i); fetchProducts(i, searchTerm, selectedCategoryId, selectedStockStatus, showOnlyFlashSale); }}
                                     className={`flex h-9 w-9 items-center justify-center rounded-lg text-sm font-semibold transition-all ${
                                         currentPage === i
                                             ? "bg-indigo-600 text-white shadow-md shadow-indigo-200"
@@ -758,7 +762,7 @@ const Products = () => {
                         </div>
                         <button
                             disabled={currentPage === totalPages - 1}
-                            onClick={() => setCurrentPage(p => p + 1)}
+                            onClick={() => { const p = currentPage + 1; setCurrentPage(p); fetchProducts(p, searchTerm, selectedCategoryId, selectedStockStatus, showOnlyFlashSale); }}
                             className="flex items-center gap-1 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition-all hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
                         >
                             Suivant

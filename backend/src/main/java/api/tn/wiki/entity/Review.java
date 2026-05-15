@@ -5,7 +5,11 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "review")
+@Table(name = "review", indexes = {
+    @Index(name = "idx_review_product_id", columnList = "product_id"),
+    @Index(name = "idx_review_user_id", columnList = "user_id"),
+    @Index(name = "idx_review_created_at", columnList = "created_at")
+})
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Review {
 

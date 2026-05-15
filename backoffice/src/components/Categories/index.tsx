@@ -19,7 +19,6 @@ import {
 } from "lucide-react";
 import {
     getCategories,
-    getCategoriesList,
     getCategoryTree,
     createCategory,
     updateCategory,
@@ -190,13 +189,16 @@ const Categories = () => {
         fetchData(currentPage);
     }, [currentPage, itemsPerPage, viewMode]);
 
+    const flattenTree = (cats: Category[]): Category[] =>
+        cats.flatMap(c => [c, ...(c.subCategories ? flattenTree(c.subCategories) : [])]);
+
     const fetchData = async (page: number = 0) => {
         setLoading(true);
         try {
             if (viewMode === "tree") {
-                const [tree, flat] = await Promise.all([getCategoryTree(), getCategoriesList()]);
+                const tree = await getCategoryTree();
                 setCategories(tree);
-                setFlatCategories(flat);
+                setFlatCategories(flattenTree(tree));
             } else {
                 const response = await getCategories(page, itemsPerPage);
                 if (response && 'content' in response) {
