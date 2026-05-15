@@ -606,8 +606,6 @@ public class ProductService {
                         .id(cat.getId())
                         .name(cat.getName())
                         .slug(cat.getSlug())
-                        .parentId(cat.getParent() != null ? cat.getParent().getId() : null)
-                        .parentName(cat.getParent() != null ? cat.getParent().getName() : null)
                         .build())
                 .collect(Collectors.toList());
 

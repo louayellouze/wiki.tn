@@ -3,6 +3,8 @@ package api.tn.wiki.repository;
 import api.tn.wiki.entity.Product;
 import api.tn.wiki.entity.StockStatus;
 import org.springframework.data.domain.Page;
+import Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
@@ -16,8 +18,11 @@ import java.util.Optional;
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Integer>, JpaSpecificationExecutor<Product> {
 
-    @EntityGraph(attributePaths = {"brand", "images"})
-    Page<Product> findAll(org.springframework.data.domain.Pageable pageable);
+    @EntityGraph(attributePaths = {"brand"})
+    Page<Product> findAll(Pageable pageable);
+
+    @EntityGraph(attributePaths = {"brand"})
+    Page<Product> findAll(Specification<Product> spec, Pageable pageable);
 
     Optional<Product> findBySlug(String slug);
     boolean existsBySlug(String slug);
@@ -30,12 +35,12 @@ public interface ProductRepository extends JpaRepository<Product, Integer>, JpaS
     @EntityGraph(attributePaths = {"brand", "images"})
     List<Product> findDistinctByCategories_IdIn(List<Long> categoryIds);
     @EntityGraph(attributePaths = {"brand", "images"})
-    Page<Product> findDistinctByCategories_IdIn(List<Long> categoryIds, org.springframework.data.domain.Pageable pageable);
+    Page<Product> findDistinctByCategories_IdIn(List<Long> categoryIds, Pageable pageable);
     
     @EntityGraph(attributePaths = {"brand", "images"})
     List<Product> findByIsFlashSaleTrueOrderByIdDesc();
     @EntityGraph(attributePaths = {"brand", "images"})
-    Page<Product> findByIsFlashSaleTrue(org.springframework.data.domain.Pageable pageable);
+    Page<Product> findByIsFlashSaleTrue(Pageable pageable);
 
     /**
      * Full search (used by /products page with all filters).
@@ -135,7 +140,7 @@ public interface ProductRepository extends JpaRepository<Product, Integer>, JpaS
         @Param("stockStatus") String stockStatus,
         @Param("categoryIds") List<Long> categoryIds,
         @Param("isFlashSale") Boolean isFlashSale,
-        org.springframework.data.domain.Pageable pageable
+        Pageable pageable
     );
 
     /**
